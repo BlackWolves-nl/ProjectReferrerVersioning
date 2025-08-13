@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="WolvePack.VS.Extensions.ProjectReferrerVersioning" Version="2.2.2.5" Language="en-US" Publisher="WolvePack" />
+    <DisplayName>Project Referrer Chain Explorer</DisplayName>
+    <Description xml:space="preserve">This Visual Studio extension provides advanced project referrer visualization and version management for .NET C# solutions.</Description>
+    <MoreInfo>https://github.com/wolvepack/project-referrer-versioning</MoreInfo>
+    <License>LICENSE</License>
+    <ReleaseNotes>https://github.com/wolvepack/project-referrer-versioning/blob/main/CHANGELOG.md</ReleaseNotes>
+    <Icon>icon.png</Icon>
+    <PreviewImage>preview.png</PreviewImage>
+    <Tags>dependency, visualization, versioning, git, project, references, architecture, analysis, tree, nuget</Tags>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+  </Installation>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" Path="|%CurrentProject%|" />
+  </Assets>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+</PackageManifest>

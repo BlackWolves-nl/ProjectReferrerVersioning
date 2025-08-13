@@ -1,0 +1,391 @@
+<Window x:Class="WolvePack.VS.Extensions.ProjectReferrerVersioning.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:WolvePack.VS.Extensions.ProjectReferrerVersioning.UI.Converters"
+        Title="Project Referrer Tree Generator" Height="600" Width="1024" Loaded="Window_Loaded"
+        WindowStartupLocation="CenterScreen" WindowState="Maximized"
+        xmlns:theme="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Theme.Dark.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!-- Ensure converters are loaded -->
+            <converters:ProjectStatusToColorConverter x:Key="StatusColorConverter"/>
+            <converters:BooleanToItalicConverter x:Key="BooleanToItalicConverter"/>
+            <converters:ExcludeMenuHeaderConverter x:Key="ExcludeMenuHeaderConverter"/>
+            <converters:ExcludedProjectForegroundConverter x:Key="ExcludedProjectForegroundConverter"/>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Window.Background>
+        <DynamicResource ResourceKey="PrimaryBackgroundBrush" />
+    </Window.Background>
+    <Window.Foreground>
+        <DynamicResource ResourceKey="PrimaryForegroundBrush" />
+    </Window.Foreground>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Project Referrer Tree Generator" 
+                   FontSize="18" FontWeight="Bold" Margin="0,0,0,10" HorizontalAlignment="Center"
+                   Style="{StaticResource ThemedTextBlockStyle}"/>
+        
+        <!-- Status Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1" Padding="8,4" Margin="0,0,0,10">
+            <TextBlock Name="StatusTextBlock" Text="Loading projects..." FontWeight="Bold" Style="{StaticResource ThemedTextBlockStyle}"/>
+        </Border>
+        
+        <!-- Main Content -->
+        <TabControl Grid.Row="2" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" Name="MainTabControl">
+            <TabItem Header="Select Projects" Background="{DynamicResource SecondaryBackgroundBrush}" Style="{StaticResource ThemedTabItemStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Filter Controls -->
+                    <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="0,0,0,1" Padding="8" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Content="Filter:" VerticalAlignment="Center" Margin="0,0,8,0" Style="{StaticResource ThemedLabelStyle}"/>
+                            <TextBox Grid.Column="1" Name="FilterTextBox" Margin="0,0,8,0"
+                                     TextChanged="FilterTextBox_TextChanged"
+                                     KeyboardNavigation.TabNavigation="Local"
+                                     AcceptsReturn="False"
+                                     AcceptsTab="False"
+                                     Focusable="True"
+                                     IsTabStop="True"
+                                     Style="{StaticResource ThemedTextBoxStyle}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Legend Row -->
+                    <Border Grid.Row="1" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="0,1,0,1" Padding="8,4" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="Legend:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <Rectangle x:Name="LegendSelectionInitialRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                <TextBlock Text="Initial/Loading" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <Rectangle x:Name="LegendSelectionNugetRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                <TextBlock Text="NuGet/Project Change" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <Rectangle x:Name="LegendSelectionNugetAndVersionRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                <TextBlock Text="NuGet + Version Changes" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <Rectangle x:Name="LegendSelectionVersionOnlyRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                <TextBlock Text="Version Only" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <Rectangle x:Name="LegendSelectionModifiedRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                <TextBlock Text="Modified" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <Rectangle x:Name="LegendSelectionCleanRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                <TextBlock Text="Clean" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Action Buttons Row -->
+                    <Border Grid.Row="2" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="0,1,0,1" Padding="8,4" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button Name="SelectAllButton" Content="Select All" Margin="0,0,8,0" Click="SelectAllButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                            <Button Name="SelectNoneButton" Content="Select None" Margin="0,0,8,0" Click="SelectNoneButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                            <Button Name="SelectModifiedButton" Content="Select Modified" Click="SelectModifiedButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Project List -->
+                    <Border Grid.Row="3" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1" Margin="0">
+                        <DataGrid Name="ProjectItemsGrid"
+                                  Margin="0"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeRows="False"
+                                  HeadersVisibility="Column"
+                                  CanUserReorderColumns="False"
+                                  CanUserResizeColumns="False"
+                                  CanUserSortColumns="True"
+                                  Background="{DynamicResource PrimaryBackgroundBrush}"
+                                  Foreground="{DynamicResource PrimaryForegroundBrush}"
+                                  RowBackground="{DynamicResource SecondaryBackgroundBrush}"
+                                  AlternatingRowBackground="{DynamicResource PrimaryBackgroundBrush}"
+                                  BorderBrush="{DynamicResource BorderBrushColor}"
+                                  BorderThickness="1"
+                                  IsReadOnly="False"
+                                  ItemsSource="{Binding FilteredProjects, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                  EnableRowVirtualization="False"
+                                  EnableColumnVirtualization="False"
+                                  GridLinesVisibility="None"
+                                  IsTabStop="True">
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="SnapsToDevicePixels" Value="True"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Setter Property="IsHitTestVisible" Value="True"/>
+                                    <Setter Property="Focusable" Value="False"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridRow">
+                                                <Border x:Name="DGR_Border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                                    <SelectiveScrollingGrid>
+                                                        <SelectiveScrollingGrid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </SelectiveScrollingGrid.ColumnDefinitions>
+                                                        <SelectiveScrollingGrid.RowDefinitions>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </SelectiveScrollingGrid.RowDefinitions>
+                                                        <DataGridCellsPresenter Grid.Column="1" ItemsPanel="{TemplateBinding ItemsPanel}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                                        <DataGridDetailsPresenter Grid.Column="1" Grid.Row="1" SelectiveScrollingGrid.SelectiveScrollingOrientation="{Binding AreRowDetailsFrozen, ConverterParameter={x:Static SelectiveScrollingOrientation.Vertical}, Converter={x:Static DataGrid.RowDetailsScrollingConverter}, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" Visibility="{TemplateBinding DetailsVisibility}"/>
+                                                        <DataGridRowHeader Grid.RowSpan="2" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" Visibility="{Binding HeadersVisibility, ConverterParameter={x:Static DataGridHeadersVisibility.Row}, Converter={x:Static DataGrid.HeadersVisibilityConverter}, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+                                                    </SelectiveScrollingGrid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="DGR_Border" Property="Background" Value="{DynamicResource DataGridRowHoverBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Setter Property="Focusable" Value="False"/>
+                                </Style>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource SecondaryBackgroundBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="Select" Width="50">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Center"
+                                                      Focusable="False"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Excluded" Width="70">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsExcludedFromVersionUpdates, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      Click="ExcludedCheckBox_Click"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Center"
+                                                      Focusable="False"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Status" Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Ellipse Width="12" Height="12" VerticalAlignment="Center"
+                                                     Fill="{Binding Status, Converter={StaticResource StatusColorConverter}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Project Name" Binding="{Binding Name}" Width="*" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource ExcludedProjectForegroundConverter}}"/>
+                                            <Setter Property="FontStyle" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource BooleanToItalicConverter}}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource ExcludedProjectForegroundConverter}}"/>
+                                            <Setter Property="FontStyle" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource BooleanToItalicConverter}}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Files Changed" Binding="{Binding GitChangedFileCount}" Width="100" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource ExcludedProjectForegroundConverter}}"/>
+                                            <Setter Property="FontStyle" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource BooleanToItalicConverter}}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Lines Changed" Binding="{Binding GitChangedLineCount}" Width="100" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource ExcludedProjectForegroundConverter}}"/>
+                                            <Setter Property="FontStyle" Value="{Binding IsExcludedFromVersionUpdates, Converter={StaticResource BooleanToItalicConverter}}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+            
+            <TabItem Header="Tree Output" Background="{DynamicResource SecondaryBackgroundBrush}" Name="TabTreeOutput" Style="{StaticResource ThemedTabItemStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <!-- Tree Display Area -->
+                    <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1">
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <!-- Controls (zoom, layout) -->
+                            <StackPanel Orientation="Horizontal" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,0,8">
+                                <TextBlock Text="Layout:" VerticalAlignment="Center" Margin="8,0,4,0" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                <ComboBox x:Name="LayoutComboBox" Width="150" SelectionChanged="LayoutComboBox_SelectionChanged" Margin="0,0,16,0">
+                                    <ComboBoxItem Content="Standard (Tree)" IsSelected="True"/>
+                                    <ComboBoxItem Content="Compact Horizontal"/>
+                                    <ComboBoxItem Content="Compact Vertical"/>
+                                </ComboBox>
+                                <Button x:Name="ZoomOutButton" Content="-" Width="28" Height="28" Margin="0,0,2,0" Click="ZoomOutButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                                <Button x:Name="ZoomInButton" Content="+" Width="28" Height="28" Margin="0,0,2,0" Click="ZoomInButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                                <Button x:Name="ZoomFitButton" Content="Fit" Width="40" Height="28" Click="ZoomFitButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                                <Button x:Name="ExportPngButton" Content="Export PNG" Width="90" Height="28" Margin="8,0,0,0" Click="ExportPngButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                            </StackPanel>
+                            <!-- Color Legend -->
+                            <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <Rectangle x:Name="LegendNugetNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="NuGet/Project Change" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <Rectangle x:Name="LegendNugetAndVersionNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="NuGet + Version Changes" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <Rectangle x:Name="LegendVersionOnlyNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Version Only" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <Rectangle x:Name="LegendModifiedNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Modified" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <Rectangle x:Name="LegendCleanNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Clean" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Rectangle x:Name="LegendVisitedNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Visited" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <!-- The scrollable/zoomable canvas for the tree -->
+                            <ScrollViewer x:Name="ReferrerTreeScrollViewer"
+                                          Grid.Row="2"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Background="{DynamicResource PrimaryBackgroundBrush}">
+                                <Canvas x:Name="ReferrerTreeCanvas" Background="Transparent"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Tree Stats -->
+                    <Border Grid.Row="1" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="0,1,0,0" Padding="8,4">
+                        <TextBlock Name="TreeStatsText"
+                                   Text="No tree generated"
+                                   FontWeight="Bold" HorizontalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Settings" Background="{DynamicResource SecondaryBackgroundBrush}" Name="TabSettings" Style="{StaticResource ThemedTabItemStyle}">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Theme -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Default Theme:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="DefaultThemeComboBox" Width="250" Margin="0,0,0,12" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="Dark"/>
+                        <ComboBoxItem Content="Slate"/>
+                    </ComboBox>
+
+                    <!-- Layout -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Default Layout:" FontWeight="Bold" Margin="0,8,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <ComboBox Grid.Row="1" Grid.Column="1" x:Name="DefaultLayoutComboBox" Width="250" Margin="0,0,0,12" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="Standard (Tree)"/>
+                        <ComboBoxItem Content="Compact Horizontal"/>
+                        <ComboBoxItem Content="Compact Vertical"/>
+                    </ComboBox>
+
+                    <!-- Debug Logging -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Debug Logging:" FontWeight="Bold" Margin="0,8,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <CheckBox Grid.Row="2" Grid.Column="1" x:Name="DebugEnabledCheckBox" Margin="0,8,0,12" VerticalAlignment="Center" HorizontalAlignment="Left" Checked="DebugEnabledCheckBox_Changed" Unchecked="DebugEnabledCheckBox_Changed">
+                        <CheckBox.Content>
+                            <TextBlock Text="Enable debug logging to C:\Temp\WolvePack.PRV.txt" Style="{StaticResource ThemedTextBlockStyle}"/>
+                        </CheckBox.Content>
+                    </CheckBox>
+
+                    <!-- Save Button below controls -->
+                    <Button Grid.Row="3" Grid.Column="1" Content="Save Settings" Width="120" Height="32" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveSettingsButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                    <!-- Status TextBlock below Save Button -->
+                    <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SettingsStatusTextBlock" Foreground="#4CAF50" FontWeight="Bold" Margin="0,16,0,0" Style="{StaticResource ThemedTextBlockStyle}"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        
+        <!-- Bottom Buttons -->
+        <Border Grid.Row="3" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1,1,1,1" Padding="8,4" Margin="0,0,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Name="ProjectCountText" VerticalAlignment="Center" Margin="0,0,20,0" FontWeight="Bold" Style="{StaticResource ThemedTextBlockStyle}"/>
+                <Button Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                <Button Name="GenerateButton" Content="Generate Tree" Click="GenerateButton_Click" IsEnabled="False" Style="{StaticResource ThemedButtonStyle}"/>
+                <Button Name="UpdateVersionsButton" Content="Update Versions" Click="UpdateVersionsButton_Click" IsEnabled="False" Style="{StaticResource ThemedButtonStyle}"/>
+                <Button Name="CloseButton" Content="Close" Click="CloseButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

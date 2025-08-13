@@ -1,0 +1,111 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Slate Theme Styles -->
+    <Color x:Key="PrimaryBackgroundColor">#263238</Color>
+    <Color x:Key="SecondaryBackgroundColor">#37474F</Color>
+    <Color x:Key="PrimaryForegroundColor">#ECEFF1</Color>
+    <Color x:Key="AccentColor">#80CBC4</Color>
+    <Color x:Key="BorderColor">#607D8B</Color>
+    <Color x:Key="RootNodeBorderColor">#00BFFF</Color> <!-- DeepSkyBlue -->
+    <Color x:Key="HoverBorderColor">#FFA500</Color> <!-- Orange -->
+    <Color x:Key="BadgeBackgroundColor">#D9534F</Color> <!-- Red -->
+    <Color x:Key="BadgeForegroundColor">#FFFFFF</Color> <!-- White -->
+    <Color x:Key="DataGridRowHoverColor">#7A8A95</Color> <!-- Much more visible hover color -->
+    <Color x:Key="DataGridRowSelectedColor">#6A7580</Color> <!-- Selected row color -->
+    <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="{StaticResource PrimaryBackgroundColor}"/>
+    <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}"/>
+    <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="{StaticResource PrimaryForegroundColor}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+    <SolidColorBrush x:Key="BorderBrushColor" Color="{StaticResource BorderColor}"/>
+    <SolidColorBrush x:Key="ExcludedProjectForegroundBrush" Color="#B0B8C0"/>
+    <SolidColorBrush x:Key="ProjectStatusInitialBrush" Color="#D3D3D3"/>
+    <SolidColorBrush x:Key="ProjectStatusModifiedBrush" Color="#FF6B6B"/>
+    <SolidColorBrush x:Key="ProjectStatusNuGetOrProjectReferenceChangesBrush" Color="#FFA500"/>
+    <SolidColorBrush x:Key="ProjectStatusNuGetOrProjectReferenceAndVersionChangesBrush" Color="#483D8B"/>
+    <SolidColorBrush x:Key="ProjectStatusIsVersionChangeOnlyBrush" Color="#4682B4"/>
+    <SolidColorBrush x:Key="ProjectStatusCleanBrush" Color="#228B22"/>
+    <SolidColorBrush x:Key="RootNodeBorderBrush" Color="{StaticResource RootNodeBorderColor}"/>
+    <SolidColorBrush x:Key="HoverBorderBrush" Color="{StaticResource HoverBorderColor}"/>
+    <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="{StaticResource BadgeBackgroundColor}"/>
+    <SolidColorBrush x:Key="BadgeForegroundBrush" Color="{StaticResource BadgeForegroundColor}"/>
+    <SolidColorBrush x:Key="DataGridRowHoverBrush" Color="{StaticResource DataGridRowHoverColor}"/>
+    <SolidColorBrush x:Key="DataGridRowSelectedBrush" Color="{StaticResource DataGridRowSelectedColor}"/>
+    <Style TargetType="Button" x:Key="ThemedButtonStyle">
+        <Setter Property="Background" Value="{StaticResource SecondaryBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrushColor}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Margin" Value="2"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#455A64"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style TargetType="TextBox" x:Key="ThemedTextBoxStyle">
+        <Setter Property="Background" Value="{StaticResource SecondaryBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrushColor}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="CaretBrush" Value="{StaticResource PrimaryForegroundBrush}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}"/>
+    </Style>
+    <Style TargetType="ComboBox" x:Key="ThemedComboBoxStyle">
+        <Setter Property="Background" Value="{StaticResource SecondaryBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrushColor}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+    <Style TargetType="Label" x:Key="ThemedLabelStyle">
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+    </Style>
+    <Style TargetType="TextBlock" x:Key="ThemedTextBlockStyle">
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+    </Style>
+    <Style TargetType="TabItem" x:Key="ThemedTabItemStyle">
+        <Setter Property="Background" Value="{StaticResource SecondaryBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrushColor}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Margin="{TemplateBinding Margin}">
+                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource PrimaryBackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#888"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="ComboBoxItem" x:Key="ThemedComboBoxItemStyle">
+        <Setter Property="Background" Value="{StaticResource SecondaryBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="6,4"/>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="#888"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

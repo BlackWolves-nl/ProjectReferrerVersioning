@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
+	<PropertyGroup>
+		<UseCodebase>true</UseCodebase>
+		<TargetFramework>net472</TargetFramework>
+		<LangVersion>7.3</LangVersion>
+		<UseWPF>true</UseWPF>
+		<RootNamespace>WolvePack.VS.Extensions.ProjectReferrerVersioning</RootNamespace>
+		<AssemblyName>WolvePack.VS.Extensions.ProjectReferrerVersioning</AssemblyName>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<OutputType>Library</OutputType>
+		<VSSDKTargetPlatformRegRootSuffix>Exp</VSSDKTargetPlatformRegRootSuffix>
+		<IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+		<IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<PlatformTarget>x64</PlatformTarget>
+		<Configurations>Debug;Release;Debug Extensions</Configurations>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<StartAction>Program</StartAction>
+		<StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
+		<StartArguments>/rootsuffix $(VSSDKTargetPlatformRegRootSuffix) /log</StartArguments>
+		<AssemblyVersion>2.2.2.5</AssemblyVersion>
+		<FileVersion>2.2.2.5</FileVersion>
+		<Version>2.2.2.5</Version>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<VsixOutputPath>C:\Dev\Publish\$(AssemblyName)\</VsixOutputPath>
+		<OutputPath>bin\Release\</OutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+		<PackageReference Include="Microsoft.Msagl.GraphViewerGDI" Version="1.1.7" />
+		<PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" />
+		<PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.14.2094" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include=".github\FUNDING.yml" />
+		<None Include="source.extension.vsixmanifest">
+			<SubType>Designer</SubType>
+		</None>
+		<VSCTCompile Include="WolvePack.VS.Extensions.ProjectReferrerVersioning.vsct">
+			<ResourceName>Menus.ctmenu</ResourceName>
+		</VSCTCompile>
+	</ItemGroup>
+
+	<!-- Include LICENSE, icon, and other assets in VSIX -->
+	<ItemGroup>
+		<Content Include="Documentation\LICENSE">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<IncludeInVSIX>true</IncludeInVSIX>
+		</Content>
+		<Content Include="icon.png" Condition="Exists('icon.png')">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<IncludeInVSIX>true</IncludeInVSIX>
+		</Content>
+		<Content Include="preview.png" Condition="Exists('preview.png')">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<IncludeInVSIX>true</IncludeInVSIX>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="PresentationFramework" />
+		<Reference Include="PresentationCore" />
+		<Reference Include="PresentationFramework.Aero2" />
+		<Reference Include="WindowsBase" />
+		<Reference Include="System.Xaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<VSIXSourceItem Include="@(IntermediateAssembly)" />
+		<VSIXSourceItem Include="@(Content)" />
+		<VSIXSourceItem Include="@(AllProjectOutputGroups)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroup)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupKeyOutput)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupSatellite)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupContent)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupCustom)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupPublish)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupSource)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupSymbol)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupDebug)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupDocumentation)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupLocalizedResource)" />
+		<VSIXSourceItem Include="@(BuiltProjectOutputGroupNative)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="UI\MainWindow.Zoom.xaml.cs">
+			<DependentUpon>MainWindow.xaml</DependentUpon>
+		</None>
+		<None Include="UI\MainWindow.TreeOutput.xaml.cs">
+			<DependentUpon>MainWindow.xaml</DependentUpon>
+		</None>
+		<None Include="UI\MainWindow.ProjectSelection.xaml.cs">
+			<DependentUpon>MainWindow.xaml</DependentUpon>
+		</None>
+		<None Include="UI\MainWindow.Settings.xaml.cs">
+			<DependentUpon>MainWindow.xaml</DependentUpon>
+		</None>
+	</ItemGroup>
+
+	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+	<Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+
+	<Target Name="UpdateVsixManifestVersion_PreBuild" BeforeTargets="BeforeBuild">
+		<Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)Update-VsixManifestVersion.ps1&quot;" />
+	</Target>
+
+	<Target Name="CopyVsixToPublishFolder" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+		<ItemGroup>
+			<BuiltVsix Include="$(OutputPath)$(AssemblyName).vsix" />
+		</ItemGroup>
+		<Message Text="Copying VSIX from %(BuiltVsix.Identity) to $(VsixOutputPath)$(AssemblyName)-$(Version).vsix" Importance="high" Condition="Exists('%(BuiltVsix.Identity)')" />
+		<Copy SourceFiles="@(BuiltVsix)" DestinationFiles="@(BuiltVsix->'$(VsixOutputPath)$(AssemblyName)-$(Version).vsix')" SkipUnchangedFiles="true" Condition="Exists('%(BuiltVsix.Identity)')" />
+	</Target>
+</Project>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable">
+	<Extern href="stdidcmd.h" />
+	<Extern href="vsshlids.h" />
+
+	<Commands package="guidWolvePack_VS_Extensions_ProjectReferrerVersioningPackage">
+		<Groups>
+			<Group guid="guidWolvePackProjectReferrerVersioningCmdSet" id="MyMenuGroupSingle" priority="0x0600">
+				<Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
+			</Group>
+            <!-- Extension top-level menu group -->
+            <Group guid="guidWolvePackProjectReferrerVersioningCmdSet" id="MyMenuGroupExtension" priority="0x0100">
+                <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EXTENSIONS" />
+            </Group>
+		</Groups>
+				
+		<Buttons>
+			<!-- Single project context -->
+			<Button guid="guidWolvePackProjectReferrerVersioningCmdSet" id="cmdidShowReferrerChainSingle" priority="0x0100" type="Button">				
+				<Parent guid="guidWolvePackProjectReferrerVersioningCmdSet" id="MyMenuGroupSingle" />
+				<CommandFlag>DynamicVisibility</CommandFlag>
+				<CommandFlag>DefaultInvisible</CommandFlag>
+				<Strings>
+					<ButtonText>Show Project Referrer Chain</ButtonText>
+				</Strings>
+			</Button>
+            <!-- Extension menu item -->
+            <Button guid="guidWolvePackProjectReferrerVersioningCmdSet" id="cmdidShowReferrerChainExtension" priority="0x0100" type="Button">
+                <Parent guid="guidWolvePackProjectReferrerVersioningCmdSet" id="MyMenuGroupExtension" />
+                <Strings>
+                    <ButtonText>Project Referrer Chains</ButtonText>
+                </Strings>
+            </Button>
+		</Buttons>
+	</Commands>
+
+	<Symbols>
+		<GuidSymbol name="guidWolvePack_VS_Extensions_ProjectReferrerVersioningPackage" value="{B3168E51-9239-4B33-B1AF-E40366A31044}" />
+		<GuidSymbol name="guidWolvePackProjectReferrerVersioningCmdSet" value="{84B4ECA1-1947-43B4-8B75-BA68C8216341}">
+			<IDSymbol name="cmdidShowReferrerChainSingle" value="0x0100" />
+            <IDSymbol name="cmdidShowReferrerChainExtension" value="0x0200" />
+			<IDSymbol name="MyMenuGroupSingle" value="0x1020" />
+            <IDSymbol name="MyMenuGroupExtension" value="0x1021" />
+		</GuidSymbol>
+		<GuidSymbol name="guidSHLMainMenu" value="{D309F791-903F-11D0-9EFC-00A0C911004F}">
+			<IDSymbol name="IDM_VS_CTXT_PROJNODE" value="0x0402" />
+            <IDSymbol name="IDM_VS_MENU_EXTENSIONS" value="0x0091" />
+		</GuidSymbol>
+	</Symbols>
+</CommandTable>

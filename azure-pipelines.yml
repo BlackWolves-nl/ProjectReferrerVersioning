@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - "*"   # mirror every branch
+      - "*"   # run on every branch push
 
 pool:
   vmImage: ubuntu-latest
@@ -11,13 +11,21 @@ steps:
     persistCredentials: true
     clean: true
 
+  # Download credentials from service connection
+  - task: GitHubAuthenticate@0
+    inputs:
+      authType: 'ServiceConnection'
+      serviceConnection: 'GithubMirrorConnection'
+    name: githubAuth
+
   - script: |
+      echo "Configuring Git identity..."
       git config --global user.name "Azure DevOps Sync Bot"
       git config --global user.email "devops-bot@example.com"
 
-      echo "Adding GitHub remote..."
-      git remote add github https://$(github.username):$(github.pat)@github.com/<your-github-username>/ProjectReferrerVersioning.git
+      echo "Adding GitHub remote from service connection..."
+      git remote add github https://$(GITHUB_USER):$(GITHUB_PAT)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
 
-      echo "Pushing all branches and tags to GitHub..."
+      echo "Mirroring all branches and tags to GitHub..."
       git push github --mirror
-    displayName: "Mirror push to GitHub"
+    displayName: "Mirror to GitHub"

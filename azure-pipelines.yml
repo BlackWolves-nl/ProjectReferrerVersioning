@@ -1,26 +1,23 @@
 trigger:
-  branches:
-    include:
-      - "*"
+- main
 
 pool:
   vmImage: ubuntu-latest
 
 variables:
-  - group: GitHubMirrorCredentials  # Contains github.username and github.pat
+- group: GitHubMirrorCredentials  # contains github.username and github.pat
 
 steps:
-  - checkout: self
-    persistCredentials: true
-    clean: true
+- checkout: self
+  fetchDepth: 0  # get full history for mirroring
 
-  - script: |
-      git config --global user.name "Azure DevOps Sync Bot"
-      git config --global user.email "devops-bot@example.com"
+- script: |
+    echo "Adding GitHub remote..."
+    git remote add github https://$(github.username):$(github.pat)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
 
-      echo "Adding GitHub remote..."
-      git remote add github https://$(github.username):$(github.pat)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
+    echo "Pushing branches..."
+    git push github --prune 'refs/heads/*:refs/heads/*'
 
-      echo "Mirroring..."
-      git push github --mirror
-    displayName: "Mirror to GitHub"
+    echo "Pushing tags..."
+    git push github --prune 'refs/tags/*:refs/tags/*'
+  displayName: 'Push to GitHub'

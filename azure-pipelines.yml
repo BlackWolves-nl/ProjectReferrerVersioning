@@ -1,0 +1,23 @@
+trigger:
+  branches:
+    include:
+      - "*"   # mirror every branch
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    persistCredentials: true
+    clean: true
+
+  - script: |
+      git config --global user.name "Azure DevOps Sync Bot"
+      git config --global user.email "devops-bot@example.com"
+
+      echo "Adding GitHub remote..."
+      git remote add github https://$(github.username):$(github.pat)@github.com/<your-github-username>/ProjectReferrerVersioning.git
+
+      echo "Pushing all branches and tags to GitHub..."
+      git push github --mirror
+    displayName: "Mirror push to GitHub"

@@ -17,7 +17,7 @@ steps:
 
       echo "Adding GitHub remote..."
       # The token from service connection will be injected automatically
-      git remote add github https://$(github.user):$(github.token)@github.com/<your-github-username>/ProjectReferrerVersioning.git
+      git remote add github https://$(github.user):$(github.token)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
 
       echo "Pushing all branches and tags to GitHub..."
       git push github --mirror

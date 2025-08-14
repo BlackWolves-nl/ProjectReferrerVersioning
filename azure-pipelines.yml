@@ -1,0 +1,23 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: GitHubMirrorCredentials  # contains github.username and github.pat
+
+steps:
+- checkout: self
+  fetchDepth: 0  # get full history for mirroring
+
+- script: |
+    echo "Adding GitHub remote..."
+    git remote add github https://$(github.username):$(github.pat)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
+
+    echo "Pushing branches..."
+    git push github 'refs/heads/*:refs/heads/*'
+
+    echo "Pushing tags..."
+    git push github --prune 'refs/tags/*:refs/tags/*'
+  displayName: 'Push to GitHub'

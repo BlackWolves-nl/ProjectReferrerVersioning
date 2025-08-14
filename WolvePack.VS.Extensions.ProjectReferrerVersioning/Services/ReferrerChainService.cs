@@ -206,7 +206,13 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
 
         private static async Task UpdateNodeVersionRecursiveAsync(ReferrerChainNode node, VersionUpdateResult result, Action<string> progress)
         {
-            if (node.Project.ProjectVersionChange == null && !string.IsNullOrWhiteSpace(node.NewVersion) && node.Project != null && !string.IsNullOrWhiteSpace(node.Project.Version) && node.NewVersion != node.Project.Version)
+            // Only update if the project is not excluded from version updates and has version changes
+            if (!node.Project.IsExcludedFromVersionUpdates && 
+                node.Project.ProjectVersionChange == null && 
+                !string.IsNullOrWhiteSpace(node.NewVersion) && 
+                node.Project != null && 
+                !string.IsNullOrWhiteSpace(node.Project.Version) && 
+                node.NewVersion != node.Project.Version)
             {
                 bool success = false;
                 string oldVersion = node.Project.Version;
@@ -274,6 +280,14 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     result.Successes.Add(node.Project.Name + ": " + oldVersion + " -> " + newVersion);
                     progress?.Invoke("Updated " + node.Project.Name + ": " + oldVersion + " -> " + newVersion);
                 }
+            }
+            else if (node.Project.IsExcludedFromVersionUpdates && !string.IsNullOrWhiteSpace(node.NewVersion))
+            {
+                // For excluded projects, just report that they were skipped but version was required
+                string oldVersion = node.Project.Version ?? "0.0.0.0";
+                string newVersion = node.NewVersion;
+                result.Successes.Add(node.Project.Name + ": " + oldVersion + " -> " + newVersion + " (EXCLUDED - version selected but not applied)");
+                progress?.Invoke("Skipped " + node.Project.Name + ": " + oldVersion + " -> " + newVersion + " (excluded from updates)");
             }
 
             if (node.Referrers != null)

@@ -33,6 +33,18 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models
         public FontWeight VersionFontWeight { get; set; }          // Font weight for version text
         public Brush BadgeBackgroundBrush { get; set; }             // Badge background color
         public Brush BadgeForegroundBrush { get; set; }             // Badge text color
+        
+        // Root badge border colors for different states
+        public Brush RootBadgeExcludedBorderBrush { get; set; }          // White border for excluded projects
+        public Brush RootBadgeRequiresVersionBorderBrush { get; set; }   // Orange border for requiring version selection
+        public Brush RootBadgeVersionSelectedBorderBrush { get; set; }   // Green border for version selected
+        
+        // Additional theme colors for shadows, borders, and text measurement
+        public Color ShadowColor { get; set; }                          // Color for all drop shadow effects
+        public Brush BadgeBorderBrush { get; set; }                     // Border color for badges and pills
+        public Brush SeparatorBrush { get; set; }                       // Background color for pill separators
+        public Brush RootBadgeTextBrush { get; set; }                   // Text color for root badge ("R")
+        public Brush FormattedTextBrush { get; set; }                   // Color for FormattedText measurements
 
         public static ReferrerChainTheme LoadThemeFromResources()
         {
@@ -53,6 +65,14 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models
                 HoverBorderBrush = resources["HoverBorderBrush"] as Brush,
                 BadgeBackgroundBrush = resources["BadgeBackgroundBrush"] as Brush,
                 BadgeForegroundBrush = resources["BadgeForegroundBrush"] as Brush,
+                RootBadgeExcludedBorderBrush = resources["RootBadgeExcludedBorderBrush"] as Brush,
+                RootBadgeRequiresVersionBorderBrush = resources["RootBadgeRequiresVersionBorderBrush"] as Brush,
+                RootBadgeVersionSelectedBorderBrush = resources["RootBadgeVersionSelectedBorderBrush"] as Brush,
+                ShadowColor = (Color)(resources["ShadowColor"] ?? Colors.Black),
+                BadgeBorderBrush = resources["BadgeBorderBrush"] as Brush,
+                SeparatorBrush = resources["SeparatorBrush"] as Brush,
+                RootBadgeTextBrush = resources["RootBadgeTextBrush"] as Brush,
+                FormattedTextBrush = resources["FormattedTextBrush"] as Brush,
                 NodeWidth = 300,
                 NodeHeight = 60,
                 HorizontalSpacing = 25,

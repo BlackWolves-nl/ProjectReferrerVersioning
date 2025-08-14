@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="WolvePack.VS.Extensions.ProjectReferrerVersioning" Version="2.3.0.0" Language="en-US" Publisher="WolvePack" />
+    <Identity Id="WolvePack.VS.Extensions.ProjectReferrerVersioning" Version="2.3.1.0" Language="en-US" Publisher="WolvePack" />
     <DisplayName>Project Referrer Chain Explorer</DisplayName>
     <Description xml:space="preserve">This Visual Studio extension provides advanced project referrer visualization and version management for .NET C# solutions.</Description>
     <MoreInfo>https://github.com/wolvepack/project-referrer-versioning</MoreInfo>

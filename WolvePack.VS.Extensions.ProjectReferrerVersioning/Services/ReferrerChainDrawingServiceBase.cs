@@ -68,7 +68,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 RadiusY = 10,
                 Effect = new DropShadowEffect
                 {
-                    Color = Colors.Black,
+                    Color = Theme.ShadowColor,
                     BlurRadius = 10,
                     ShadowDepth = 2,
                     Opacity = 0.18
@@ -168,10 +168,27 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             if (node.WasOriginallySelected)
             {
                 ContextMenu menu = new ContextMenu();
-                menu.Items.Add(CreateVersionMenuItem("Major", node.Project.Version ?? "0.0.0.0", 0, node));
-                menu.Items.Add(CreateVersionMenuItem("Minor", node.Project.Version ?? "0.0.0.0", 1, node));
-                menu.Items.Add(CreateVersionMenuItem("Patch", node.Project.Version ?? "0.0.0.0", 2, node));
-                menu.Items.Add(CreateVersionMenuItem("Revision", node.Project.Version ?? "0.0.0.0", 3, node));
+
+                string version = node.Project.Version ?? "0.0.0.0";
+
+                if(node.Project.IsExcludedFromVersionUpdates)
+                {
+                    menu.Items.Add(new MenuItem
+                    {
+                        Header = "This project is excluded from the update path (version selection optional)",
+                        IsEnabled = false,
+                        FontStyle = FontStyles.Italic
+                    });
+
+                    menu.Items.Add(new Separator());
+                }
+
+                // Add version selection menu items (common for both cases)
+                menu.Items.Add(CreateVersionMenuItem("Major", version, 0, node));
+                menu.Items.Add(CreateVersionMenuItem("Minor", version, 1, node));
+                menu.Items.Add(CreateVersionMenuItem("Patch", version, 2, node));
+                menu.Items.Add(CreateVersionMenuItem("Revision", version, 3, node));
+
                 rect.ContextMenu = menu;
             }
 
@@ -295,11 +312,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     Width = badgeDiameter,
                     Height = badgeDiameter,
                     Fill = Theme.BadgeBackgroundBrush,
-                    Stroke = Brushes.White,
+                    Stroke = Theme.BadgeBorderBrush,
                     StrokeThickness = 2,
                     Effect = new DropShadowEffect
                     {
-                        Color = Colors.Black,
+                        Color = Theme.ShadowColor,
                         BlurRadius = 6,
                         ShadowDepth = 1,
                         Opacity = 0.18
@@ -349,11 +366,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     Height = pillHeight,
                     CornerRadius = new CornerRadius(pillHeight / 2),
                     Background = Theme.BadgeBackgroundBrush,
-                    BorderBrush = Brushes.White,
+                    BorderBrush = Theme.BadgeBorderBrush,
                     BorderThickness = new Thickness(2),
                     Effect = new DropShadowEffect
                     {
-                        Color = Colors.Black,
+                        Color = Theme.ShadowColor,
                         BlurRadius = 6,
                         ShadowDepth = 1,
                         Opacity = 0.18
@@ -398,7 +415,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 {
                     Width = 2,
                     Height = pillHeight * 0.6,
-                    Background = Brushes.White,
+                    Background = Theme.SeparatorBrush,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     CornerRadius = new CornerRadius(1),
@@ -471,10 +488,23 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 double rootBadgeX = x - rootBadgeDiameter * 0.3;
                 double rootBadgeY = y - rootBadgeDiameter * 0.3;
 
-                // Change border color based on whether a version has been selected
-                Brush rootBorderBrush = !string.IsNullOrEmpty(node.NewVersion) 
-                    ? Brushes.LimeGreen  // Green border when version is selected
-                    : Brushes.White;     // White border when no version selected
+                // Determine border color based on exclusion status and version selection using theme colors
+                Brush rootBorderBrush;
+                if (node.Project.IsExcludedFromVersionUpdates)
+                {
+                    // Excluded projects: White border to indicate they're excluded
+                    rootBorderBrush = Theme.RootBadgeExcludedBorderBrush;
+                }
+                else if (!string.IsNullOrEmpty(node.NewVersion))
+                {
+                    // Non-excluded projects with version selected: Green border
+                    rootBorderBrush = Theme.RootBadgeVersionSelectedBorderBrush;
+                }
+                else
+                {
+                    // Non-excluded projects requiring version selection: Orange border
+                    rootBorderBrush = Theme.RootBadgeRequiresVersionBorderBrush;
+                }
 
                 Ellipse rootBadge = new Ellipse
                 {
@@ -485,7 +515,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     StrokeThickness = 2,
                     Effect = new DropShadowEffect
                     {
-                        Color = Colors.Black,
+                        Color = Theme.ShadowColor,
                         BlurRadius = 6,
                         ShadowDepth = 1,
                         Opacity = 0.18
@@ -507,7 +537,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 TextBlock rootBadgeLabel = new TextBlock
                 {
                     Text = "R",
-                    Foreground = Brushes.White,
+                    Foreground = Theme.RootBadgeTextBrush,
                     FontFamily = new FontFamily(Theme.FontFamily),
                     FontSize = 12,
                     FontWeight = FontWeights.Bold,
@@ -615,7 +645,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             // If this is an originally selected project, check if it has a version
             if (originallySelectedProjects.Contains(node.Project))
             {
-                if (string.IsNullOrEmpty(node.NewVersion))
+                // Skip version requirement check for excluded projects
+                if (!node.Project.IsExcludedFromVersionUpdates && string.IsNullOrEmpty(node.NewVersion))
                     return false; // This originally selected project doesn't have a version yet
             }
 
@@ -819,7 +850,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 FlowDirection.LeftToRight,
                 new Typeface(fontFamily),
                 fontSize,
-                Brushes.Black,
+                Theme.FormattedTextBrush,
                 new NumberSubstitution(),
                 1.0);
             if (formatted.Width <= maxWidth - 20) return text.Length;
@@ -834,7 +865,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     FlowDirection.LeftToRight,
                     new Typeface(fontFamily),
                     fontSize,
-                    Brushes.Black,
+                    Theme.FormattedTextBrush,
                     new NumberSubstitution(),
                     1.0);
                 if (subFormatted.Width > maxWidth - 20)

@@ -12,6 +12,19 @@
     <Color x:Key="BadgeForegroundColor">#FFFFFF</Color> <!-- White -->
     <Color x:Key="DataGridRowHoverColor">#808080</Color> <!-- Much more visible hover color -->
     <Color x:Key="DataGridRowSelectedColor">#666666</Color> <!-- Selected row color -->
+
+    <!-- Root Badge Border Colors -->
+    <Color x:Key="RootBadgeExcludedBorderColor">#FFFFFF</Color> <!-- White for excluded projects -->
+    <Color x:Key="RootBadgeRequiresVersionBorderColor">#FFA500</Color> <!-- Orange for requiring version selection -->
+    <Color x:Key="RootBadgeVersionSelectedBorderColor">#32CD32</Color> <!-- LimeGreen for version selected -->
+    
+    <!-- Additional Theme Colors for Full Theme Support -->
+    <Color x:Key="ShadowColor">#000000</Color> <!-- Black shadows for dark theme -->
+    <Color x:Key="BadgeBorderColor">#FFFFFF</Color> <!-- White borders for badges -->
+    <Color x:Key="SeparatorColor">#FFFFFF</Color> <!-- White separators in pills -->
+    <Color x:Key="RootBadgeTextColor">#FFFFFF</Color> <!-- White text for root badge "R" -->
+    <Color x:Key="FormattedTextColor">#000000</Color> <!-- Black for text measurements -->
+
     <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="{StaticResource PrimaryBackgroundColor}"/>
     <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}"/>
     <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="{StaticResource PrimaryForegroundColor}"/>
@@ -30,6 +43,15 @@
     <SolidColorBrush x:Key="BadgeForegroundBrush" Color="{StaticResource BadgeForegroundColor}"/>
     <SolidColorBrush x:Key="DataGridRowHoverBrush" Color="{StaticResource DataGridRowHoverColor}"/>
     <SolidColorBrush x:Key="DataGridRowSelectedBrush" Color="{StaticResource DataGridRowSelectedColor}"/>
+    
+    <!-- Root Badge Border Brushes -->
+    <SolidColorBrush x:Key="RootBadgeExcludedBorderBrush" Color="{StaticResource RootBadgeExcludedBorderColor}"/>
+    <SolidColorBrush x:Key="RootBadgeRequiresVersionBorderBrush" Color="{StaticResource RootBadgeRequiresVersionBorderColor}"/>
+    <SolidColorBrush x:Key="RootBadgeVersionSelectedBorderBrush" Color="{StaticResource RootBadgeVersionSelectedBorderColor}"/>
+    <SolidColorBrush x:Key="BadgeBorderBrush" Color="{StaticResource BadgeBorderColor}"/>
+    <SolidColorBrush x:Key="SeparatorBrush" Color="{StaticResource SeparatorColor}"/>
+    <SolidColorBrush x:Key="RootBadgeTextBrush" Color="{StaticResource RootBadgeTextColor}"/>
+    <SolidColorBrush x:Key="FormattedTextBrush" Color="{StaticResource FormattedTextColor}"/>
     <Style TargetType="Button" x:Key="ThemedButtonStyle">
         <Setter Property="Background" Value="{StaticResource SecondaryBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource PrimaryForegroundBrush}"/>

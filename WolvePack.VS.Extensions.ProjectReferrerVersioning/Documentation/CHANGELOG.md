@@ -1,5 +1,50 @@
 # Changelog
 
+## [2.3.1.0] - Excluded Project Workflow Improvements
+
+### Workflow Simplification
+- **Optional Version Selection for Excluded Projects**: Excluded projects no longer require version selection to complete the update process
+  - Version selection is now optional for excluded projects, making the workflow more logical
+  - Process completion only requires non-excluded originally selected projects to have versions
+  - Streamlined workflow eliminates unnecessary steps for excluded projects
+
+### Visual Enhancements
+- **Enhanced Root Badge Visual Feedback**: Improved color coding system for better status recognition
+  - ? **White border**: Excluded projects
+  - ?? **Orange border**: Non-excluded projects requiring version selection
+  - ?? **Green border**: Non-excluded projects with version selected  
+  - Clear visual distinction between different project states
+
+### Context Menu Improvements
+- **Updated Excluded Project Context Menu**: Enhanced messaging for better user understanding
+  - Changed from "This project is excluded from the update path" 
+  - To "This project is excluded from the update path (version selection optional)"
+  - Clarifies that version selection is optional while still available if desired
+
+### Version Management Logic
+- **Improved Exclusion Handling**: Refined logic for excluded project version requirements
+  - `CheckAllOriginallySelectedHaveVersionsRecursive` now skips excluded projects
+  - Version bump triggering only considers non-excluded originally selected projects
+  - Excluded projects can still optionally participate in version selection
+
+### User Experience Benefits
+- **Simplified Workflow**: Excluded projects no longer block the completion process
+- **Clear Visual Feedback**: White badges immediately identify excluded projects, orange badges show projects needing version selection
+- **Logical Behavior**: If a project is excluded from updates, version selection is appropriately optional
+- **Maintained Flexibility**: Users can still select versions for excluded projects if needed
+
+### Technical Improvements
+- **Consistent Exclusion Logic**: Unified handling of excluded projects across all version management features
+- **Enhanced Status Reporting**: Clear indication when excluded projects are processed but not updated
+- **Improved Process Flow**: Streamlined completion logic that respects exclusion settings
+- **Complete Theme Integration**: Moved all remaining hardcoded colors to theme system for full theme support
+  - Added `ShadowColor` for drop shadow effects
+  - Added `BadgeBorderBrush` for badge borders
+  - Added `SeparatorBrush` for pill separators
+  - Added `RootBadgeTextBrush` for root badge text
+  - Added `FormattedTextBrush` for text measurements
+  - Ensures proper light theme compatibility and future theme flexibility
+
 ## [2.3.0.0] - Root Badge and Enhanced Context Menu Support
 
 ### Visual Enhancements
@@ -111,4 +156,4 @@
 
 ---
 
-**Extension Version:** 2.3.0.0
+**Extension Version:** 2.3.1.0

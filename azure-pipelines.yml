@@ -15,9 +15,12 @@ steps:
     echo "Adding GitHub remote..."
     git remote add github https://$(github.username):$(github.pat)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
 
-    echo "Pushing branches..."
-    git push github 'refs/heads/*:refs/heads/*'
+    echo "Fetching all branches and tags..."
+    git fetch origin --prune
 
-    echo "Pushing tags..."
-    git push github --prune 'refs/tags/*:refs/tags/*'
-  displayName: 'Push to GitHub'
+    echo "Pushing all remote branches..."
+    git push github +refs/remotes/origin/*:refs/heads/*
+
+    echo "Pushing all tags..."
+    git push github --prune refs/tags/*:refs/tags/*
+  displayName: 'Mirror to GitHub'

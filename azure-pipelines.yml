@@ -12,6 +12,9 @@ steps:
   fetchDepth: 0  # get full history for mirroring
 
 - script: |
+    echo "Copying README to root for GitHub display..."
+    cp "WolvePack.VS.Extensions.ProjectReferrerVersioning/Documentation/README.md" README.md
+
     echo "Adding GitHub remote..."
     git remote add github https://$(github.username):$(github.pat)@github.com/BlackWolves-nl/ProjectReferrerVersioning.git
 
@@ -23,4 +26,4 @@ steps:
 
     echo "Pushing all tags..."
     git push github --prune refs/tags/*:refs/tags/*
-  displayName: 'Mirror to GitHub'
+  displayName: 'Mirror to GitHub with README fix'

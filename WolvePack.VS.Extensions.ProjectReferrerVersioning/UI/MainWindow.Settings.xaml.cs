@@ -36,6 +36,9 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             // Set debug enabled checkbox
             DebugEnabledCheckBox.IsChecked = _userSettings.DebugEnabled;
             
+            // Set minimize chain drawing checkbox
+            MinimizeChainDrawingCheckBox.IsChecked = _userSettings.MinimizeChainDrawing;
+            
             // Apply debug setting to DebugHelper
             DebugHelper.DebugEnabled = _userSettings.DebugEnabled;
         }
@@ -45,6 +48,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             _userSettings.DefaultTheme = (DefaultThemeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Dark";
             _userSettings.DefaultLayout = (DefaultLayoutComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Standard (Tree)";
             _userSettings.DebugEnabled = DebugEnabledCheckBox.IsChecked ?? false;
+            _userSettings.MinimizeChainDrawing = MinimizeChainDrawingCheckBox.IsChecked ?? false;
             
             // Apply debug setting to DebugHelper immediately
             DebugHelper.DebugEnabled = _userSettings.DebugEnabled;
@@ -52,8 +56,20 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             _userSettings.Save();
             SettingsStatusTextBlock.Text = "Settings saved.";
             SetThemeFromSettings();
+            
+            // Regenerate tree with new minimize chain drawing setting if tree exists
+            if (_lastGeneratedChains != null && _allProjects != null)
+            {
+                System.Collections.Generic.List<ProjectModel> selectedProjects = _allProjects.Where(p => p.IsSelected).ToList();
+                if (selectedProjects.Count > 0)
+                {
+                    _lastGeneratedChains = ReferrerChainService.BuildReferrerChains(selectedProjects, _userSettings.MinimizeChainDrawing);
+                    ReferrerTreeCanvas.Children.Clear();
+                    _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+                }
+            }
             // Redraw the tree with the new theme if possible
-            if (_drawingService != null && ReferrerTreeCanvas != null && _drawingService is ReferrerChainDrawingServiceBase baseService && baseService.LastRoots != null)
+            else if (_drawingService != null && ReferrerTreeCanvas != null && _drawingService is ReferrerChainDrawingServiceBase baseService && baseService.LastRoots != null)
             {
                 _drawingService.Theme = _currentTheme;
                 _drawingService.DrawChainsBase(ReferrerTreeCanvas, baseService.LastRoots);

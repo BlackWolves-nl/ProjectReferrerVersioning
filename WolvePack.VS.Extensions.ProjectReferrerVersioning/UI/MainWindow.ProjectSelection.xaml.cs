@@ -118,7 +118,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
         private async Task LoadProjectsWithProgressAsync(List<Project> preSelectedProjects)
         {
             _isAnalysisComplete = false;
-            UpdateGenerateButtonState();
+            await UpdateGenerateButtonStateAsync();
             preSelectedProjects = preSelectedProjects ?? new List<Project>();
             try
             {
@@ -129,8 +129,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
                 InitializeProjectModels(projectModels, preSelectedProjects);
                 ApplyFilter();
-                UpdateStatusAndCounts();
-                UpdateGenerateButtonState();
+                await UpdateStatusAndCountsAsync();
+                await UpdateGenerateButtonStateAsync();
 
                 await SetStatusTextAsync($"Ready - {projectModels.Count} projects loaded, analyzing Git status...");
 
@@ -196,7 +196,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 }
 
                 await SetStatusTextAsync($"Ready - {projectModels.Count} projects loaded, no Git repository detected.");
-                UpdateStatusAndCounts();
+                await UpdateStatusAndCountsAsync();
                 ApplyFilter();
                 _ = GenerateReferrersAsync();
                 return;
@@ -245,7 +245,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             }
 
             await SetStatusTextAsync($"Ready - {projectModels.Count} projects loaded, Git analysis complete.");
-            UpdateStatusAndCounts();
+            await UpdateStatusAndCountsAsync();
             ApplyFilter();
 
             // After git analysis is done, start referrer generation
@@ -360,20 +360,26 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
             await SetStatusTextAsync($"Ready - {total} projects loaded, referrer generation complete.");
             _isAnalysisComplete = true;
-            UpdateGenerateButtonState();
+            await UpdateGenerateButtonStateAsync();
         }
 
         private void ProjectInfo_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if(e.PropertyName == nameof(ProjectModel.IsSelected))
             {
-                UpdateGenerateButtonState();
-                UpdateStatusAndCounts();
+                // Use fire-and-forget pattern for async method call from synchronous event handler
+
+                ThreadHelper.JoinableTaskFactory.Run(async () =>
+                {
+                    await UpdateGenerateButtonStateAsync();
+                    await UpdateStatusAndCountsAsync();
+                });
             }
         }
 
-        private void UpdateStatusAndCounts()
+        private async Task UpdateStatusAndCountsAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if(_allProjects != null)
             {
                 int total = _allProjects.Count;
@@ -386,10 +392,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             }
         }
 
-        private void UpdateGenerateButtonState()
+        private async Task UpdateGenerateButtonStateAsync()
         {
             if(_allProjects != null)
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 GenerateButton.IsEnabled = _isAnalysisComplete && _allProjects.Any(p => p.IsSelected);
             }
         }
@@ -441,6 +448,35 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
                 _userSettings.Save();
                 ApplyFilter(); // Refresh UI
+            }
+        }
+
+        private void ProjectItemsGrid_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // Find the DataGridRow that was clicked
+            DependencyObject dep = (DependencyObject)e.OriginalSource;
+            while (dep != null && !(dep is DataGridRow))
+            {
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            if (dep is DataGridRow row && row.DataContext is ProjectModel project)
+            {
+                // Only toggle selection if the click was not on a checkbox
+                DependencyObject originalSource = (DependencyObject)e.OriginalSource;
+                while (originalSource != null)
+                {
+                    if (originalSource is CheckBox)
+                    {
+                        // Click was on a checkbox, don't toggle row selection
+                        return;
+                    }
+                    originalSource = VisualTreeHelper.GetParent(originalSource);
+                }
+
+                // Toggle the project selection
+                project.IsSelected = !project.IsSelected;
+                e.Handled = true; // Prevent other row selection behavior
             }
         }
     }

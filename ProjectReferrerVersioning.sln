@@ -7,14 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WolvePack.VS.Extensions.Pro
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug Extensions|Any CPU = Debug Extensions|Any CPU
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DCFE0C1D-F29F-0911-1475-59DB8D167EB0}.Debug Extensions|Any CPU.ActiveCfg = Debug Extensions|Any CPU
-		{DCFE0C1D-F29F-0911-1475-59DB8D167EB0}.Debug Extensions|Any CPU.Build.0 = Debug Extensions|Any CPU
-		{DCFE0C1D-F29F-0911-1475-59DB8D167EB0}.Debug Extensions|Any CPU.Deploy.0 = Debug Extensions|Any CPU
 		{DCFE0C1D-F29F-0911-1475-59DB8D167EB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DCFE0C1D-F29F-0911-1475-59DB8D167EB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCFE0C1D-F29F-0911-1475-59DB8D167EB0}.Debug|Any CPU.Deploy.0 = Debug|Any CPU

@@ -135,7 +135,8 @@
                                   EnableRowVirtualization="False"
                                   EnableColumnVirtualization="False"
                                   GridLinesVisibility="None"
-                                  IsTabStop="True">
+                                  IsTabStop="True"
+                                  PreviewMouseLeftButtonDown="ProjectItemsGrid_PreviewMouseLeftButtonDown">
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridRow">
                                     <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}"/>
@@ -339,6 +340,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
@@ -348,31 +350,40 @@
 
                     <!-- Theme -->
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Default Theme:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
-                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="DefaultThemeComboBox" Width="250" Margin="0,0,0,12" HorizontalAlignment="Left">
+                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="DefaultThemeComboBox" Width="250" Margin="0,12,0,12" HorizontalAlignment="Left">
                         <ComboBoxItem Content="Dark"/>
                         <ComboBoxItem Content="Slate"/>
                     </ComboBox>
 
                     <!-- Layout -->
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Default Layout:" FontWeight="Bold" Margin="0,8,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
-                    <ComboBox Grid.Row="1" Grid.Column="1" x:Name="DefaultLayoutComboBox" Width="250" Margin="0,0,0,12" HorizontalAlignment="Left">
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Default Layout:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <ComboBox Grid.Row="1" Grid.Column="1" x:Name="DefaultLayoutComboBox" Width="250" Margin="0,12,0,12" HorizontalAlignment="Left" >
                         <ComboBoxItem Content="Standard (Tree)"/>
                         <ComboBoxItem Content="Compact Horizontal"/>
                         <ComboBoxItem Content="Compact Vertical"/>
                     </ComboBox>
 
                     <!-- Debug Logging -->
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Debug Logging:" FontWeight="Bold" Margin="0,8,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
-                    <CheckBox Grid.Row="2" Grid.Column="1" x:Name="DebugEnabledCheckBox" Margin="0,8,0,12" VerticalAlignment="Center" HorizontalAlignment="Left" Checked="DebugEnabledCheckBox_Changed" Unchecked="DebugEnabledCheckBox_Changed">
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Debug Logging:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <CheckBox Grid.Row="2" Grid.Column="1" x:Name="DebugEnabledCheckBox" Margin="0,12,0,12" VerticalAlignment="Center" HorizontalAlignment="Left" Checked="DebugEnabledCheckBox_Changed" Unchecked="DebugEnabledCheckBox_Changed">
                         <CheckBox.Content>
                             <TextBlock Text="Enable debug logging to C:\Temp\WolvePack.PRV.txt" Style="{StaticResource ThemedTextBlockStyle}"/>
                         </CheckBox.Content>
                     </CheckBox>
 
-                    <!-- Save Button below controls -->
-                    <Button Grid.Row="3" Grid.Column="1" Content="Save Settings" Width="120" Height="32" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveSettingsButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
-                    <!-- Status TextBlock below Save Button -->
-                    <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SettingsStatusTextBlock" Foreground="#4CAF50" FontWeight="Bold" Margin="0,16,0,0" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <!-- Minimize Chain Drawing -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Minimize Chain Drawing:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <CheckBox Grid.Row="3" Grid.Column="1" x:Name="MinimizeChainDrawingCheckBox" Margin="0,12,0,12" VerticalAlignment="Center" HorizontalAlignment="Left">
+                        <CheckBox.Content>
+                            <TextBlock Text="Hide root chains for projects that appear in other chains" Style="{StaticResource ThemedTextBlockStyle}"/>
+                        </CheckBox.Content>
+                    </CheckBox>
+
+                    <!-- Save Button -->
+                    <Button Grid.Row="4" Grid.Column="1" Content="Save Settings" Width="120" Height="32" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveSettingsButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                    
+                    <!-- Status TextBlock -->
+                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="SettingsStatusTextBlock" Foreground="#4CAF50" FontWeight="Bold" Margin="0,16,0,0" Style="{StaticResource ThemedTextBlockStyle}"/>
                 </Grid>
             </TabItem>
         </TabControl>

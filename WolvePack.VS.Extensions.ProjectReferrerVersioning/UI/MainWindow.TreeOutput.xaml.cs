@@ -83,8 +83,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                     // Run tree generation and logging on a background thread for performance
                     System.Collections.Generic.List<ReferrerChainNode> generatedChains = await System.Threading.Tasks.Task.Run(() =>
                     {
-                        // Build the referrer chains for selected projects
-                        System.Collections.Generic.List<ReferrerChainNode> chains = ReferrerChainService.BuildReferrerChains(selectedProjects);
+                        // Build the referrer chains for selected projects with minimize chain drawing setting
+                        System.Collections.Generic.List<ReferrerChainNode> chains = ReferrerChainService.BuildReferrerChains(selectedProjects, _userSettings.MinimizeChainDrawing);
                         // Log the tree structure for debugging and diagnostics
                         foreach (ReferrerChainNode chain in chains)
                         {
@@ -201,7 +201,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             System.Collections.Generic.List<ProjectModel> selectedProjects = _allProjects?.Where(p => p.IsSelected).ToList();
             if (selectedProjects != null && selectedProjects.Count > 0)
             {
-                _lastGeneratedChains = ReferrerChainService.BuildReferrerChains(selectedProjects);
+                _lastGeneratedChains = ReferrerChainService.BuildReferrerChains(selectedProjects, _userSettings.MinimizeChainDrawing);
                 ReferrerTreeCanvas.Children.Clear();
                 _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
             }

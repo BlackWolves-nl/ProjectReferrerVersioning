@@ -1,5 +1,48 @@
 # Changelog
 
+## [2.3.0.0] - Root Badge and Enhanced Context Menu Support
+
+### Visual Enhancements
+- **Root Badge with Version Feedback**: Added distinctive "R" badge in top-left corner for all originally selected projects
+  - Appears on all originally selected projects, even when they become child nodes in minimized chain drawing
+  - Dynamic border color: Green when version is selected, white when pending
+  - Perfectly centered text using Grid layout for consistency with other badges
+  - Clear visual indication of project selection status and version progress
+
+### Context Menu Improvements
+- **Universal Context Menu Access**: Version selection context menus now available for all originally selected projects
+  - Fixed limitation where only drawn root nodes had context menus
+  - All originally selected projects can now be right-clicked for version selection regardless of chain position
+  - Consistent behavior whether minimized chain drawing is enabled or not
+  - Major, Minor, Patch, and Revision version options available for all root projects
+
+### Version Management Enhancements
+- **Improved Version Bump Logic**: Fixed version propagation logic for minimized chain drawing scenarios
+  - Version bumps now trigger when ALL originally selected projects have versions (not just drawn root nodes)
+  - Enhanced tracking of originally selected projects throughout chain filtering process
+  - Proper version propagation to child projects regardless of chain minimization
+  - Added `WasOriginallySelected` property to `ReferrerChainNode` for accurate tracking
+
+### User Experience Improvements
+- **DataGrid Row Click Selection**: Enhanced project selection usability
+  - Click anywhere on a DataGrid row to toggle project selection
+  - Smart click detection preserves checkbox functionality
+  - Intuitive selection behavior following standard UI patterns
+  - Dual selection methods: both row clicks and checkboxes work seamlessly
+  - No conflicts with existing checkbox behavior
+
+### Technical Improvements
+- **Better State Management**: Separated UI selection state from originally selected tracking
+  - Added `WasOriginallySelected` property to prevent state corruption
+  - Improved chain filtering logic to preserve originally selected project information
+  - Enhanced version bump calculations for complex dependency scenarios
+  - Proper visual tree traversal for accurate click target detection
+
+### Bug Fixes
+- **Fixed Context Menu Accessibility**: Resolved issue where originally selected projects lost context menus when becoming child nodes
+- **Fixed Version Bump Timing**: Corrected logic where version bumps only triggered for drawn roots instead of all selected projects
+- **Fixed Root Badge Display**: Eliminated issue where all projects showed root badge due to state corruption
+
 ## [2.2.2.5] - Git Service Refactor
 
 ## Git Service Refactor
@@ -68,4 +111,4 @@
 
 ---
 
-**Extension Version:** 2.2.3.0
+**Extension Version:** 2.3.0.0

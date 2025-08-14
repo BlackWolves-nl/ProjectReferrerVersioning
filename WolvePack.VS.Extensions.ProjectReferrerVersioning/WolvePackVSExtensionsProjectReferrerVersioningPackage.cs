@@ -11,7 +11,7 @@ using Task = System.Threading.Tasks.Task;
 namespace WolvePack.VS.Extensions.ProjectReferrerVersioning
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("WolvePack.VS.Extensions.ProjectReferrerVersioning", "Displays project Referrer chains and automatic versioning", "2.2.2.5")]
+    [InstalledProductRegistration("WolvePack.VS.Extensions.ProjectReferrerVersioning", "Displays project Referrer chains and automatic versioning", "2.3.0.0")]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideAutoLoad(UIContextGuids80.NoSolution, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]

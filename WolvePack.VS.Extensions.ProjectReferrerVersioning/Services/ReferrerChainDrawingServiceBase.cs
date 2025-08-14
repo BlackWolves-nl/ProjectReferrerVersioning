@@ -164,8 +164,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 }
             };
 
-            // Attach context menu for root nodes
-            if (node.IsRoot)
+            // Attach context menu for originally selected projects (all root projects should have version context menu)
+            if (node.WasOriginallySelected)
             {
                 ContextMenu menu = new ContextMenu();
                 menu.Items.Add(CreateVersionMenuItem("Major", node.Project.Version ?? "0.0.0.0", 0, node));
@@ -227,54 +227,54 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             }
 
             // Draw badge for number of changes (top right corner)
-            int changeCount = node.Project.ReferenceChanges != null ? node.Project.ReferenceChanges.Count : 0;
-            if (changeCount > 0)
-            {
-                string badgeText = changeCount > 99 ? "99+" : changeCount.ToString();
-                double badgeDiameter = 26;
-                double badgeX = x + Theme.NodeWidth - badgeDiameter * 0.7;
-                double badgeY = y - badgeDiameter * 0.3;
+            //int changeCount = node.Project.ReferenceChanges != null ? node.Project.ReferenceChanges.Count : 0;
+            //if (changeCount > 0)
+            //{
+            //    string badgeText = changeCount > 99 ? "99+" : changeCount.ToString();
+            //    double badgeDiameter = 26;
+            //    double badgeX = x + Theme.NodeWidth - badgeDiameter * 0.7;
+            //    double badgeY = y - badgeDiameter * 0.3;
 
-                Ellipse badge = new Ellipse
-                {
-                    Width = badgeDiameter,
-                    Height = badgeDiameter,
-                    Fill = Theme.BadgeBackgroundBrush,
-                    Stroke = Brushes.White,
-                    StrokeThickness = 2,
-                    Effect = new DropShadowEffect
-                    {
-                        Color = Colors.Black,
-                        BlurRadius = 6,
-                        ShadowDepth = 1,
-                        Opacity = 0.18
-                    },
-                    IsHitTestVisible = false
-                };
-                Canvas.SetLeft(badge, badgeX);
-                Canvas.SetTop(badge, badgeY);
-                Panel.SetZIndex(badge, 2);
-                canvas.Children.Add(badge);
+            //    Ellipse badge = new Ellipse
+            //    {
+            //        Width = badgeDiameter,
+            //        Height = badgeDiameter,
+            //        Fill = Theme.BadgeBackgroundBrush,
+            //        Stroke = Brushes.White,
+            //        StrokeThickness = 2,
+            //        Effect = new DropShadowEffect
+            //        {
+            //            Color = Colors.Black,
+            //            BlurRadius = 6,
+            //            ShadowDepth = 1,
+            //            Opacity = 0.18
+            //        },
+            //        IsHitTestVisible = false
+            //    };
+            //    Canvas.SetLeft(badge, badgeX);
+            //    Canvas.SetTop(badge, badgeY);
+            //    Panel.SetZIndex(badge, 2);
+            //    canvas.Children.Add(badge);
 
-                TextBlock badgeLabel = new TextBlock
-                {
-                    Text = badgeText,
-                    Foreground = Theme.BadgeForegroundBrush,
-                    FontFamily = new FontFamily(Theme.FontFamily),
-                    FontSize = 13,
-                    FontWeight = FontWeights.Bold,
-                    TextAlignment = TextAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Width = badgeDiameter,
-                    Height = badgeDiameter,
-                    IsHitTestVisible = false
-                };
-                Canvas.SetLeft(badgeLabel, badgeX);
-                Canvas.SetTop(badgeLabel, badgeY + 2);
-                Panel.SetZIndex(badgeLabel, 3);
-                canvas.Children.Add(badgeLabel);
-            }
+            //    TextBlock badgeLabel = new TextBlock
+            //    {
+            //        Text = badgeText,
+            //        Foreground = Theme.BadgeForegroundBrush,
+            //        FontFamily = new FontFamily(Theme.FontFamily),
+            //        FontSize = 13,
+            //        FontWeight = FontWeights.Bold,
+            //        TextAlignment = TextAlignment.Center,
+            //        HorizontalAlignment = HorizontalAlignment.Center,
+            //        VerticalAlignment = VerticalAlignment.Center,
+            //        Width = badgeDiameter,
+            //        Height = badgeDiameter,
+            //        IsHitTestVisible = false
+            //    };
+            //    Canvas.SetLeft(badgeLabel, badgeX);
+            //    Canvas.SetTop(badgeLabel, badgeY + 2);
+            //    Panel.SetZIndex(badgeLabel, 3);
+            //    canvas.Children.Add(badgeLabel);
+            //}
 
             // Draw badge for number of git changes (top right corner)
             int fileCount = node.Project.GitChangedFileCount;
@@ -463,6 +463,66 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 };
                 pill.MouseEnter += (s, e) => { triggerNodeHover(true); };
             }
+
+            // Draw root badge for originally selected projects (top left corner)
+            if (node.WasOriginallySelected) // Use new property instead of node.Project.IsSelected
+            {
+                double rootBadgeDiameter = 24;
+                double rootBadgeX = x - rootBadgeDiameter * 0.3;
+                double rootBadgeY = y - rootBadgeDiameter * 0.3;
+
+                // Change border color based on whether a version has been selected
+                Brush rootBorderBrush = !string.IsNullOrEmpty(node.NewVersion) 
+                    ? Brushes.LimeGreen  // Green border when version is selected
+                    : Brushes.White;     // White border when no version selected
+
+                Ellipse rootBadge = new Ellipse
+                {
+                    Width = rootBadgeDiameter,
+                    Height = rootBadgeDiameter,
+                    Fill = Theme.RootNodeBorderBrush, // Use the root border color for consistency
+                    Stroke = rootBorderBrush,
+                    StrokeThickness = 2,
+                    Effect = new DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        BlurRadius = 6,
+                        ShadowDepth = 1,
+                        Opacity = 0.18
+                    },
+                    IsHitTestVisible = false
+                };
+                Canvas.SetLeft(rootBadge, rootBadgeX);
+                Canvas.SetTop(rootBadge, rootBadgeY);
+                Panel.SetZIndex(rootBadge, 2);
+                canvas.Children.Add(rootBadge);
+
+                // Use a Grid to center the text like other badges
+                Grid rootBadgeGrid = new Grid
+                {
+                    Width = rootBadgeDiameter,
+                    Height = rootBadgeDiameter,
+                    IsHitTestVisible = false
+                };
+                TextBlock rootBadgeLabel = new TextBlock
+                {
+                    Text = "R",
+                    Foreground = Brushes.White,
+                    FontFamily = new FontFamily(Theme.FontFamily),
+                    FontSize = 12,
+                    FontWeight = FontWeights.Bold,
+                    TextAlignment = TextAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Padding = new Thickness(0),
+                    IsHitTestVisible = false
+                };
+                rootBadgeGrid.Children.Add(rootBadgeLabel);
+                Canvas.SetLeft(rootBadgeGrid, rootBadgeX);
+                Canvas.SetTop(rootBadgeGrid, rootBadgeY);
+                Panel.SetZIndex(rootBadgeGrid, 3);
+                canvas.Children.Add(rootBadgeGrid);
+            }
         }
 
         private MenuItem CreateVersionMenuItem(String type, String version, int part, ReferrerChainNode node)
@@ -484,6 +544,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     }
                 }
 
+                // Check version bump logic with improved originally selected project tracking
                 BumpChildRevisionsIfAllRootsSet();
                 if(_lastCanvas != null && _lastRoots != null)
                     DrawChains(_lastCanvas, _lastRoots);
@@ -522,32 +583,93 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             if(_lastRoots == null)
                 return;
 
-            if(_lastRoots.All(r => !string.IsNullOrEmpty(r.NewVersion)))
+            // Collect all originally selected projects from the current chains
+            HashSet<ProjectModel> originallySelectedProjects = new HashSet<ProjectModel>();
+            foreach(ReferrerChainNode root in _lastRoots)
+                CollectOriginallySelectedProjects(root, originallySelectedProjects);
+
+            // Check if ALL originally selected projects have versions set (not just drawn root nodes)
+            bool allOriginallySelectedHaveVersions = true;
+            foreach(ReferrerChainNode root in _lastRoots)
+            {
+                if(!CheckAllOriginallySelectedHaveVersionsRecursive(root, originallySelectedProjects))
+                {
+                    allOriginallySelectedHaveVersions = false;
+                    break;
+                }
+            }
+
+            if(allOriginallySelectedHaveVersions && originallySelectedProjects.Count > 0)
             {
                 HashSet<ProjectModel> rootProjects = new HashSet<ProjectModel>(_lastRoots.Select(r => r.Project));
                 HashSet<ReferrerChainNode> visited = new HashSet<ReferrerChainNode>(_lastRoots);
+                
                 foreach(ReferrerChainNode root in _lastRoots)
-                    BumpChildrenRecursive(root, visited, rootProjects);
+                    BumpChildrenRecursive(root, visited, rootProjects, originallySelectedProjects);
                 AllRootNodesUpdated?.Invoke();
             }
         }
 
-        private void BumpChildrenRecursive(ReferrerChainNode node, HashSet<ReferrerChainNode> visited, HashSet<ProjectModel> rootProjects)
+        private bool CheckAllOriginallySelectedHaveVersionsRecursive(ReferrerChainNode node, HashSet<ProjectModel> originallySelectedProjects)
+        {
+            // If this is an originally selected project, check if it has a version
+            if (originallySelectedProjects.Contains(node.Project))
+            {
+                if (string.IsNullOrEmpty(node.NewVersion))
+                    return false; // This originally selected project doesn't have a version yet
+            }
+
+            // Check all children recursively
+            foreach (ReferrerChainNode child in node.Referrers)
+            {
+                if (!CheckAllOriginallySelectedHaveVersionsRecursive(child, originallySelectedProjects))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void CollectOriginallySelectedProjects(ReferrerChainNode node, HashSet<ProjectModel> originallySelectedProjects)
+        {
+            if (node.WasOriginallySelected) // Use new property instead of node.Project.IsSelected
+            {
+                originallySelectedProjects.Add(node.Project);
+            }
+
+            foreach (ReferrerChainNode child in node.Referrers)
+            {
+                CollectOriginallySelectedProjects(child, originallySelectedProjects);
+            }
+        }
+
+        private void BumpChildrenRecursive(ReferrerChainNode node, HashSet<ReferrerChainNode> visited, HashSet<ProjectModel> rootProjects, HashSet<ProjectModel> originallySelectedProjects)
         {
             foreach(ReferrerChainNode child in node.Referrers)
             {
-                // Skip if this child is a root in any chain
-                if(rootProjects.Contains(child.Project))
-                    continue;
-                if(visited.Add(child))
+                // Skip if this child is a root in any chain, unless it's an originally selected project
+                // that should be able to get version updates even if it's now a child
+                bool shouldSkip = rootProjects.Contains(child.Project) && !originallySelectedProjects.Contains(child.Project);
+                
+                if (!shouldSkip && visited.Add(child))
                 {
-                    // Only bump revision if NewVersion is not already set
+                    // Originally selected projects get version updates even if they're now children
+                    // Other projects only get revision bumps if they're not roots
                     if (!child.Project.IsExcludedFromVersionUpdates && string.IsNullOrEmpty(child.NewVersion))
                     {
-                        child.NewVersion = IncrementVersion(child.Project.Version ?? "0.0.0.0", 3); // Revision bump
+                        if (originallySelectedProjects.Contains(child.Project))
+                        {
+                            // Originally selected projects can get any version update, not just revision
+                            // For now, we'll give them revision updates like other children
+                            child.NewVersion = IncrementVersion(child.Project.Version ?? "0.0.0.0", 3); // Revision bump
+                        }
+                        else if (!rootProjects.Contains(child.Project))
+                        {
+                            // Regular child nodes get revision bumps
+                            child.NewVersion = IncrementVersion(child.Project.Version ?? "0.0.0.0", 3); // Revision bump
+                        }
                     }
 
-                    BumpChildrenRecursive(child, visited, rootProjects);
+                    BumpChildrenRecursive(child, visited, rootProjects, originallySelectedProjects);
                 }
             }
         }

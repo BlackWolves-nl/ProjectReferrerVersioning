@@ -10,6 +10,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers
         public string DefaultTheme { get; set; } = "Dark";
         public string DefaultLayout { get; set; } = "Standard (Tree)";
         public bool DebugEnabled { get; set; } = false;
+        public bool MinimizeChainDrawing { get; set; } = false;
 
         // SolutionName -> List of excluded project names
         public Dictionary<string, List<string>> ExcludedProjectsBySolution { get; set; } = new Dictionary<string, List<string>>();

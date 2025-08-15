@@ -35,7 +35,8 @@ This Visual Studio extension provides advanced project referrer visualization an
 - **Filtering and Sorting**
   - Filter and sort projects by name or status.
   - Select all, none, or only modified projects with one click.
-
+  - "Select Modified" button automatically skips excluded projects for improved workflow efficiency.
+  
 - **Legend and Status Indicators**
   - Visual legend for node types and project statuses.
   - Status bar with project and graph statistics.

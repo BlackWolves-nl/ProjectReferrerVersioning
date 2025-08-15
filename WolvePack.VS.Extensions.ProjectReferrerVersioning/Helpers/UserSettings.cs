@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using WolvePack.VS.Extensions.ProjectReferrerVersioning.Models;
 
 namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers
 {
@@ -11,6 +12,9 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers
         public string DefaultLayout { get; set; } = "Standard (Tree)";
         public bool DebugEnabled { get; set; } = false;
         public bool MinimizeChainDrawing { get; set; } = false;
+        public VersioningMode VersioningMode { get; set; } = VersioningMode.FourPart;
+
+        public static VersioningMode ActiveVersioningMode { get; set; } = VersioningMode.FourPart;
 
         // SolutionName -> List of excluded project names
         public Dictionary<string, List<string>> ExcludedProjectsBySolution { get; set; } = new Dictionary<string, List<string>>();
@@ -25,11 +29,14 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers
                 if (File.Exists(SettingsFilePath))
                 {
                     string json = File.ReadAllText(SettingsFilePath);
-                    return JsonConvert.DeserializeObject<UserSettings>(json) ?? new UserSettings();
+                    UserSettings settings = JsonConvert.DeserializeObject<UserSettings>(json) ?? new UserSettings();
+                    ActiveVersioningMode = settings.VersioningMode;
+                    return settings;
                 }
             }
             catch { }
 
+            ActiveVersioningMode = VersioningMode.FourPart;
             return new UserSettings();
         }
 
@@ -37,6 +44,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers
         {
             try
             {
+                ActiveVersioningMode = VersioningMode;
                 if(!Directory.Exists(SettingsDirectory))
                     Directory.CreateDirectory(SettingsDirectory);
                 string json = JsonConvert.SerializeObject(this, Formatting.Indented);

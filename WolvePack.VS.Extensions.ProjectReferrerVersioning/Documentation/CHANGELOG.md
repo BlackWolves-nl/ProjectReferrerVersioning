@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.5.0.0] - (Unreleased) Custom Versioning Mode
+
+### New Features
+- **Configurable Versioning Scheme**: Added setting to choose between 4-part (Major.Minor.Patch.Revision) and 3-part (Major.Minor.Patch) versioning.
+  - Revision bump disabled in 3-part mode.
+  - Automatic child propagation uses Patch when in 3-part mode.
+  - Setting persisted per user; affects version bump menus and propagation logic.
+
+## [2.4.0.0] - Project Selection Improvements
+
+### User Experience Enhancements
+- **Improved "Select Modified" Button Behavior**: The "Select Modified" button now skips excluded projects
+  - Excluded projects are no longer automatically selected when using "Select Modified"
+  - Maintains logical consistency since excluded projects don't participate in version updates
+  - Prevents accidental selection of projects that won't be processed
+  - Users can still manually select excluded projects if needed
+
+### Technical Improvements
+- **Enhanced Project Selection Logic**: Refined selection filtering to respect project exclusion settings
+  - `SelectModifiedButton_Click` now checks `IsExcludedFromVersionUpdates` property
+  - Consistent behavior across all automated selection features
+  - Improved workflow efficiency for users with many excluded projects
+
 ## [2.3.1.0] - Excluded Project Workflow Improvements
 
 ### Workflow Simplification
@@ -156,4 +179,4 @@
 
 ---
 
-**Extension Version:** 2.3.1.0
+**Extension Version:** 2.4.0.0

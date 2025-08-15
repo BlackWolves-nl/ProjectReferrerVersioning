@@ -38,9 +38,19 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             
             // Set minimize chain drawing checkbox
             MinimizeChainDrawingCheckBox.IsChecked = _userSettings.MinimizeChainDrawing;
-            
+
+            // Set versioning mode
+            foreach(ComboBoxItem item in VersioningModeComboBox.Items)
+            {
+                if((string)item.Tag == _userSettings.VersioningMode.ToString())
+                {
+                    VersioningModeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
             // Apply debug setting to DebugHelper
             DebugHelper.DebugEnabled = _userSettings.DebugEnabled;
+            UserSettings.ActiveVersioningMode = _userSettings.VersioningMode;
         }
 
         private void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -49,6 +59,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             _userSettings.DefaultLayout = (DefaultLayoutComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Standard (Tree)";
             _userSettings.DebugEnabled = DebugEnabledCheckBox.IsChecked ?? false;
             _userSettings.MinimizeChainDrawing = MinimizeChainDrawingCheckBox.IsChecked ?? false;
+            if(VersioningModeComboBox.SelectedItem is ComboBoxItem vmItem && vmItem.Tag is string tag)
+            {
+                if(Enum.TryParse(tag, out VersioningMode mode))
+                    _userSettings.VersioningMode = mode;
+            }
             
             // Apply debug setting to DebugHelper immediately
             DebugHelper.DebugEnabled = _userSettings.DebugEnabled;

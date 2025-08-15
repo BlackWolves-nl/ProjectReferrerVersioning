@@ -13,23 +13,31 @@ using WolvePack.VS.Extensions.ProjectReferrerVersioning.Models;
 namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
 {
     /// <summary>
-    /// Service for Git operations and project analysis
+    /// Service for Git operations and project analysis.
+    /// Consolidates all git queries so the rest of the code does not have to spawn processes or parse output.
     /// </summary>
     public static class GitService
     {
         private const int _max_DIRECTORY_LEVELS = 20;
-        
-        #region Public API Methods
 
+        // =================================================================================================
+        // Public API Methods
+        // =================================================================================================
+        /// <summary>
+        /// Analyze a single project by first collecting the changed files for the entire repository.
+        /// </summary>
         public static async Task<(ProjectStatus status, List<ReferenceChange> referenceChanges)> AnalyzeProjectAsync(ProjectModel projectModel, string repoRoot)
         {
             List<string> allChangedFiles = await GetAllChangedFilesInRepoAsync(repoRoot);
             return await AnalyzeProjectWithChangedFilesAsync(projectModel, repoRoot, allChangedFiles);
         }
 
+        /// <summary>
+        /// Analyze a project using a pre-fetched list of all changed files in the repository (perf optimization).
+        /// </summary>
         public static async Task<(ProjectStatus status, List<ReferenceChange> referenceChanges)> AnalyzeProjectWithChangedFilesAsync(
-            ProjectModel projectModel, 
-            string repoRoot, 
+            ProjectModel projectModel,
+            string repoRoot,
             List<string> allChangedFiles)
         {
             (bool IsValid, string ProjectDirectory) = InitializeProjectAnalysis(projectModel);
@@ -38,36 +46,25 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 return (ProjectStatus.Clean, new List<ReferenceChange>());
             }
 
-            List<string> changedFiles = FilterChangedFilesForProject(
-                allChangedFiles, 
-                repoRoot, 
-                ProjectDirectory);
-
+            List<string> changedFiles = FilterChangedFilesForProject(allChangedFiles, repoRoot, ProjectDirectory);
             await UpdateProjectChangeCountsAsync(projectModel, repoRoot, changedFiles);
-
-            if (!changedFiles.Any())
-            {
-                return (ProjectStatus.Clean, new List<ReferenceChange>());
-            }
+            if (!changedFiles.Any()) return (ProjectStatus.Clean, new List<ReferenceChange>());
 
             FileAnalysisResults analysisResults = await AnalyzeChangedFilesAsync(repoRoot, changedFiles);
             ProjectVersionChange versionChange = ProcessVersionChanges(analysisResults.VersionChanges, projectModel.Name);
-            
             projectModel.ProjectVersionChange = versionChange;
 
-            ProjectStatus status = DetermineProjectStatus(
-                analysisResults.HasOtherChanges, 
-                analysisResults.ReferenceChanges.Count, 
-                versionChange);
-
+            ProjectStatus status = DetermineProjectStatus(analysisResults.HasOtherChanges, analysisResults.ReferenceChanges.Count, versionChange);
             DebugHelper.Log($"AnalyzeProject: Final status for '{projectModel.Name}': {status}", nameof(GitService));
             return (status, analysisResults.ReferenceChanges);
         }
 
+        /// <summary>
+        /// Returns all changed (added/modified/deleted) files reported by git status --porcelain.
+        /// </summary>
         public static async Task<List<string>> GetAllChangedFilesInRepoAsync(string repoRoot)
         {
             DebugHelper.Log($"GetChangedFiles: Starting Git status check in '{repoRoot}'", nameof(GitService));
-            
             try
             {
                 string output = await RunGitCommandAsync(repoRoot, "status --porcelain");
@@ -80,21 +77,26 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             }
         }
 
+        /// <summary>
+        /// Attempts to resolve the git repository root for a given solution or project file.
+        /// </summary>
         public static string FindGitRootForSolutionOrProjectFile(string filePath)
         {
             if (string.IsNullOrEmpty(filePath))
             {
-                DebugHelper.Log($"FindGitRoot: filePath is null or empty", nameof(GitService));
+                DebugHelper.Log("FindGitRoot: filePath is null or empty", nameof(GitService));
                 return null;
             }
-            
+
             return FindGitRootFromDirectory(Path.GetDirectoryName(filePath));
         }
 
-        #endregion
-
-        #region Project Analysis Methods
-
+        // =================================================================================================
+        // Project Analysis Methods
+        // =================================================================================================
+        /// <summary>
+        /// Initial validation and setup. Returns false if the project directory is invalid.
+        /// </summary>
         private static (bool IsValid, string ProjectDirectory) InitializeProjectAnalysis(ProjectModel projectModel)
         {
             string projectDir = Path.GetDirectoryName(projectModel.FileName);
@@ -109,13 +111,14 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             return (true, projectDir);
         }
 
+        /// <summary>
+        /// Narrows the full changed file list to only those under the project's directory.
+        /// </summary>
         private static List<string> FilterChangedFilesForProject(List<string> allChangedFiles, string repoRoot, string projectDir)
         {
             DebugHelper.Log($"AnalyzeProject: Total changed files in repo: {allChangedFiles.Count}", nameof(GitService));
-
             List<string> changedFiles = new List<string>();
             string projectDirFull;
-            
             try
             {
                 projectDirFull = Path.GetFullPath(projectDir);
@@ -152,7 +155,6 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
 
                 string combinedPath = Path.Combine(repoRoot, file);
                 string fullPath = Path.GetFullPath(combinedPath);
-                
                 return fullPath.StartsWith(projectDirFull + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
             }
             catch (Exception ex)
@@ -168,15 +170,16 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             projectModel.GitChangedLineCount = await CalculateChangedLinesAsync(repoRoot, changedFiles);
         }
 
+        /// <summary>
+        /// Uses git diff --numstat to count added + deleted lines across all changed files belonging to a project.
+        /// </summary>
         private static async Task<int> CalculateChangedLinesAsync(string repoRoot, List<string> changedFiles)
         {
             if (changedFiles.Count == 0) return 0;
-
             try
             {
-                string diffNumstat = await RunGitCommandAsync(repoRoot, 
+                string diffNumstat = await RunGitCommandAsync(repoRoot,
                     "diff --numstat -- " + string.Join(" ", changedFiles.Select(f => '"' + f + '"')));
-                
                 return ParseDiffNumstat(diffNumstat);
             }
             catch (Exception ex)
@@ -190,30 +193,28 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
         {
             int changedLines = 0;
             string[] lines = diffNumstat.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            
             foreach (string line in lines)
             {
                 string[] parts = line.Split('\t');
                 if (parts.Length >= 2)
                 {
-                    if (int.TryParse(parts[0], out int added))
-                        changedLines += added;
-                    if (int.TryParse(parts[1], out int deleted))
-                        changedLines += deleted;
+                    if (int.TryParse(parts[0], out int added)) changedLines += added;
+                    if (int.TryParse(parts[1], out int deleted)) changedLines += deleted;
                 }
             }
-            
+
             return changedLines;
         }
 
-        #endregion
-
-        #region File Analysis Methods
-
+        // =================================================================================================
+        // File Analysis Methods
+        // =================================================================================================
+        /// <summary>
+        /// Analyze the subset of changed files relevant to a project, building a roll-up of reference & version changes.
+        /// </summary>
         private static async Task<FileAnalysisResults> AnalyzeChangedFilesAsync(string repoRoot, List<string> changedFiles)
         {
             FileAnalysisResults results = new FileAnalysisResults();
-            
             foreach (string relFile in changedFiles)
             {
                 try
@@ -226,7 +227,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     results.HasOtherChanges = true;
                 }
             }
-            
+
             return results;
         }
 
@@ -235,20 +236,14 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             string absFile = Path.Combine(repoRoot, relFile);
             string ext = Path.GetExtension(absFile).ToLowerInvariant();
             string fileName = Path.GetFileName(absFile);
-
             if (IsAnalyzableFile(ext, fileName))
             {
                 string diff = await GetGitDiffAsync(repoRoot, absFile);
                 FileDiffResult diffResult = AnalyzeProjectFileDiff(absFile, diff);
-                
                 results.ReferenceChanges.AddRange(diffResult.NugetChanges);
                 results.ReferenceChanges.AddRange(diffResult.RefChanges);
                 results.VersionChanges.AddRange(diffResult.VersionChanges);
-                
-                if (diffResult.HasOtherChanges)
-                {
-                    results.HasOtherChanges = true;
-                }
+                if (diffResult.HasOtherChanges) results.HasOtherChanges = true;
             }
             else
             {
@@ -256,36 +251,30 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             }
         }
 
+        /// <summary>
+        /// Restricts expensive diff parsing to project system / version impacting files.
+        /// </summary>
         private static bool IsAnalyzableFile(string extension, string fileName)
         {
-            return extension == ".csproj" || 
-                   extension == ".props" || 
+            return extension == ".csproj" ||
+                   extension == ".props" ||
                    fileName.Equals("packages.config", StringComparison.OrdinalIgnoreCase) ||
                    fileName.Equals("AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase);
         }
 
-        #endregion
-
-        #region Diff Analysis Methods
-
+        // =================================================================================================
+        // Diff Analysis Methods
+        // =================================================================================================
         private static FileDiffResult AnalyzeProjectFileDiff(string file, string diff)
         {
             FileDiffResult result = new FileDiffResult();
             DiffLineProcessor diffProcessor = new DiffLineProcessor(file);
-            
             string[] lines = diff.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            
             foreach (string line in lines)
             {
                 if (ShouldSkipDiffLine(line)) continue;
-                
-                if (diffProcessor.ProcessLine(line, result))
-                {
-                    continue; // Line was processed successfully
-                }
-                
-                // If we reach here, the line represents other changes
-                result.HasOtherChanges = true;
+                if (diffProcessor.ProcessLine(line, result)) continue; // processed
+                result.HasOtherChanges = true; // unrecognized change => mark other changes
                 break;
             }
 
@@ -295,14 +284,10 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
 
         private static bool ShouldSkipDiffLine(string line)
         {
-            if (line.StartsWith("+++", StringComparison.Ordinal) || 
-                line.StartsWith("---", StringComparison.Ordinal) || 
-                line.StartsWith("@@", StringComparison.Ordinal))
-                return true;
-                
-            if (!(line.StartsWith("+") || line.StartsWith("-")))
-                return true;
-                
+            if (line.StartsWith("+++", StringComparison.Ordinal) ||
+                line.StartsWith("---", StringComparison.Ordinal) ||
+                line.StartsWith("@@", StringComparison.Ordinal)) return true;
+            if (!(line.StartsWith("+") || line.StartsWith("-"))) return true;
             string trimmed = line.TrimStart('+', '-');
             return string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("<!--");
         }
@@ -311,16 +296,12 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
         {
             List<ProjectVersionChange> combinedVersionChanges = new List<ProjectVersionChange>();
             var grouped = rawVersionChanges.GroupBy(vc => new { vc.FileName, vc.Source, vc.VersionProperty });
-            
             foreach (var group in grouped)
             {
                 ProjectVersionChange combined = CombineVersionChangeGroup(group);
-                if (combined != null)
-                {
-                    combinedVersionChanges.Add(combined);
-                }
+                if (combined != null) combinedVersionChanges.Add(combined);
             }
-            
+
             return combinedVersionChanges;
         }
 
@@ -328,7 +309,6 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
         {
             ProjectVersionChange add = group.FirstOrDefault(vc => vc.ChangeType == VersionChangeType.Added);
             ProjectVersionChange remove = group.FirstOrDefault(vc => vc.ChangeType == VersionChangeType.Removed);
-            
             if (add != null && remove != null)
             {
                 return new ProjectVersionChange
@@ -341,7 +321,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     VersionProperty = add.VersionProperty
                 };
             }
-            else if (add != null)
+
+            if (add != null)
             {
                 return new ProjectVersionChange
                 {
@@ -353,7 +334,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     VersionProperty = add.VersionProperty
                 };
             }
-            else if (remove != null)
+
+            if (remove != null)
             {
                 return new ProjectVersionChange
                 {
@@ -365,35 +347,25 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     VersionProperty = remove.VersionProperty
                 };
             }
-            
+
             return null;
         }
 
-        #endregion
-
-        #region Version Change Processing
-
+        // =================================================================================================
+        // Version Change Processing
+        // =================================================================================================
         private static ProjectVersionChange ProcessVersionChanges(List<ProjectVersionChange> versionChanges, string projectName)
         {
-            if (versionChanges.Count <= 1)
-            {
-                return versionChanges.FirstOrDefault();
-            }
-
+            if (versionChanges.Count <= 1) return versionChanges.FirstOrDefault();
             return ValidateAndResolveVersionConflicts(versionChanges, projectName);
         }
 
         private static ProjectVersionChange ValidateAndResolveVersionConflicts(List<ProjectVersionChange> versionChanges, string projectName)
         {
             ProjectVersionChange first = versionChanges[0];
-            bool allIdentical = versionChanges.All(vc => 
+            bool allIdentical = versionChanges.All(vc =>
                 vc.OldVersion == first.OldVersion && vc.NewVersion == first.NewVersion);
-                
-            if (allIdentical)
-            {
-                return first;
-            }
-
+            if (allIdentical) return first;
             ShowVersionConflictDialog(versionChanges, projectName);
             throw new InvalidOperationException($"Conflicting version changes detected for project '{projectName}'. Generation stopped.");
         }
@@ -403,47 +375,34 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             string msg = $"Multiple conflicting version changes detected for project '{projectName}':\n\n";
             foreach (ProjectVersionChange vc in versionChanges)
             {
-                msg += $"File: {vc.FileName}\nSource: {vc.Source}\n" +
-                       $"Old Version: {vc.OldVersion ?? "<none>"}\n" +
-                       $"New Version: {vc.NewVersion ?? "<none>"}\n\n";
+                msg += $"File: {vc.FileName}\nSource: {vc.Source}\nOld Version: {vc.OldVersion ?? "<none>"}\nNew Version: {vc.NewVersion ?? "<none>"}\n\n";
             }
 
             MessageBox.Show(msg, "Version Change Conflict", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
-        #endregion
-
-        #region Status Determination
-
+        // =================================================================================================
+        // Status Determination
+        // =================================================================================================
         private static ProjectStatus DetermineProjectStatus(bool hasOtherChanges, int referenceChangeCount, ProjectVersionChange versionChange)
         {
-            if (hasOtherChanges)
-                return ProjectStatus.Modified;
-                
+            if (hasOtherChanges) return ProjectStatus.Modified;
             bool hasReferenceChanges = referenceChangeCount > 0;
             bool hasVersionChange = versionChange != null;
-            
-            if (hasReferenceChanges && hasVersionChange)
-                return ProjectStatus.NuGetOrProjectReferenceAndVersionChanges;
-            if (hasReferenceChanges)
-                return ProjectStatus.NuGetOrProjectReferenceChanges;
-            if (hasVersionChange)
-                return ProjectStatus.IsVersionChangeOnly;
-                
+            if (hasReferenceChanges && hasVersionChange) return ProjectStatus.NuGetOrProjectReferenceAndVersionChanges;
+            if (hasReferenceChanges) return ProjectStatus.NuGetOrProjectReferenceChanges;
+            if (hasVersionChange) return ProjectStatus.IsVersionChangeOnly;
             return ProjectStatus.Clean;
         }
 
-        #endregion
-
-        #region Git Operations
-
+        // =================================================================================================
+        // Git Operations (status parsing / diff helpers)
+        // =================================================================================================
         private static List<string> ParseGitStatusOutput(string output)
         {
             string[] lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             List<string> files = new List<string>();
-            
             DebugHelper.Log($"GetChangedFiles: Git status returned {lines.Length} lines", nameof(GitService));
-            
             foreach (string line in lines)
             {
                 string file = ParseGitStatusLine(line);
@@ -463,20 +422,10 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             try
             {
                 if (line.Length <= 3) return null;
-                
                 string file = line.Substring(3).Trim();
-                
                 if (string.IsNullOrWhiteSpace(file)) return null;
-                
-                // Handle quoted filenames
-                if (file.StartsWith("\"") && file.EndsWith("\"") && file.Length > 2)
-                {
-                    file = UnescapeGitFilename(file);
-                }
-                
-                // Validate file path
+                if (file.StartsWith("\"") && file.EndsWith("\"") && file.Length > 2) file = UnescapeGitFilename(file);
                 if (file.IndexOfAny(new char[] { '\0' }) >= 0) return null;
-                
                 return file;
             }
             catch (Exception ex)
@@ -490,10 +439,10 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
         {
             string file = quotedFile.Substring(1, quotedFile.Length - 2);
             return file.Replace("\\\"", "\"")
-                      .Replace("\\\\", "\\")
-                      .Replace("\\t", "\t")
-                      .Replace("\\n", "\n")
-                      .Replace("\\r", "\r");
+                       .Replace("\\\\", "\\")
+                       .Replace("\\t", "\t")
+                       .Replace("\\n", "\n")
+                       .Replace("\\r", "\r");
         }
 
         private static string FindGitRootFromDirectory(string startDir)
@@ -501,29 +450,24 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             try
             {
                 DebugHelper.Log($"FindGitRoot: Starting search from directory: '{startDir}'", nameof(GitService));
-                
                 string dir = startDir;
                 int levels = 0;
-                
                 while (!string.IsNullOrEmpty(dir) && levels < _max_DIRECTORY_LEVELS)
                 {
                     DebugHelper.Log($"FindGitRoot: Checking level {levels}: '{dir}'", nameof(GitService));
-                    
                     if (!Directory.Exists(dir)) break;
-                    
                     if (HasGitRepository(dir))
                     {
                         DebugHelper.Log($"FindGitRoot: Found Git repository at: '{dir}'", nameof(GitService));
                         return dir;
                     }
-                    
+
                     string parentDir = Path.GetDirectoryName(dir);
-                    if (parentDir == dir) break; // Reached filesystem root
-                    
+                    if (parentDir == dir) break;
                     dir = parentDir;
                     levels++;
                 }
-                
+
                 DebugHelper.Log($"FindGitRoot: No Git repository found after checking {levels} levels", nameof(GitService));
             }
             catch (Exception ex)
@@ -556,7 +500,6 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            
             using (Process proc = Process.Start(psi))
             {
                 string output = await proc.StandardOutput.ReadToEndAsync();
@@ -573,147 +516,5 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             Uri folderUri = new Uri(relativeTo);
             return Uri.UnescapeDataString(folderUri.MakeRelativeUri(pathUri).ToString().Replace('/', Path.DirectorySeparatorChar));
         }
-
-        #endregion
     }
-
-    #region Helper Classes
-
-    /// <summary>
-    /// Results from analyzing changed files
-    /// </summary>
-    internal class FileAnalysisResults
-    {
-        public List<ReferenceChange> ReferenceChanges { get; } = new List<ReferenceChange>();
-        public List<ProjectVersionChange> VersionChanges { get; } = new List<ProjectVersionChange>();
-        public bool HasOtherChanges { get; set; }
-    }
-
-    /// <summary>
-    /// Results from analyzing a single file diff
-    /// </summary>
-    internal class FileDiffResult
-    {
-        public List<ReferenceChange> NugetChanges { get; } = new List<ReferenceChange>();
-        public List<ReferenceChange> RefChanges { get; } = new List<ReferenceChange>();
-        public List<ProjectVersionChange> RawVersionChanges { get; } = new List<ProjectVersionChange>();
-        public List<ProjectVersionChange> VersionChanges { get; set; } = new List<ProjectVersionChange>();
-        public bool HasOtherChanges { get; set; }
-    }
-
-    /// <summary>
-    /// Processes individual diff lines using regex patterns
-    /// </summary>
-    internal class DiffLineProcessor
-    {
-        private readonly string _fileName;
-        
-        private static readonly Regex _nugetRegex = new Regex(
-            @"<PackageReference[^>]*Include=""([^""]+)""[^>]*Version=""([^""]*)""[^>]*>",
-            RegexOptions.Compiled);
-            
-        private static readonly Regex _projectRefRegex = new Regex(
-            @"<ProjectReference[^>]*Include=""([^""]+)""[^>]*>",
-            RegexOptions.Compiled);
-            
-        private static readonly Regex _versionRegex = new Regex(
-            @"<(Version|AssemblyVersion|FileVersion)[^>]*>([^<]+)</\1>",
-            RegexOptions.Compiled);
-            
-        private static readonly Regex _assemblyInfoRegex = new Regex(
-            @"\[assembly:\s*(AssemblyVersion|AssemblyFileVersion)\(""([0-9.]+)""\)\]",
-            RegexOptions.Compiled);
-
-        public DiffLineProcessor(string fileName)
-        {
-            _fileName = fileName;
-        }
-
-        public bool ProcessLine(string line, FileDiffResult result)
-        {
-            string trimmed = line.TrimStart('+', '-');
-            bool isAdd = line.StartsWith("+");
-
-            return ProcessNugetChange(trimmed, isAdd, result) ||
-                   ProcessProjectReference(trimmed, isAdd, result) ||
-                   ProcessVersionChange(trimmed, isAdd, result) ||
-                   ProcessAssemblyInfoChange(trimmed, isAdd, result);
-        }
-
-        private bool ProcessNugetChange(string trimmed, bool isAdd, FileDiffResult result)
-        {
-            Match match = _nugetRegex.Match(trimmed);
-            if (!match.Success) return false;
-
-            ReferenceChange change = new ReferenceChange
-            {
-                Name = match.Groups[1].Value,
-                OldVersion = isAdd ? null : match.Groups[2].Value,
-                NewVersion = isAdd ? match.Groups[2].Value : null,
-                IsNuGet = true,
-                IsProjectReference = false,
-                ChangeType = isAdd ? ReferenceChangeType.Added : ReferenceChangeType.Removed
-            };
-            
-            result.NugetChanges.Add(change);
-            return true;
-        }
-
-        private bool ProcessProjectReference(string trimmed, bool isAdd, FileDiffResult result)
-        {
-            Match match = _projectRefRegex.Match(trimmed);
-            if (!match.Success) return false;
-
-            ReferenceChange change = new ReferenceChange
-            {
-                Name = match.Groups[1].Value,
-                IsNuGet = false,
-                IsProjectReference = true,
-                ChangeType = isAdd ? ReferenceChangeType.Added : ReferenceChangeType.Removed
-            };
-            
-            result.RefChanges.Add(change);
-            return true;
-        }
-
-        private bool ProcessVersionChange(string trimmed, bool isAdd, FileDiffResult result)
-        {
-            Match match = _versionRegex.Match(trimmed);
-            if (!match.Success) return false;
-
-            ProjectVersionChange change = new ProjectVersionChange
-            {
-                FileName = _fileName,
-                OldVersion = isAdd ? null : match.Groups[2].Value,
-                NewVersion = isAdd ? match.Groups[2].Value : null,
-                Source = "csproj",
-                ChangeType = isAdd ? VersionChangeType.Added : VersionChangeType.Removed,
-                VersionProperty = match.Groups[1].Value
-            };
-            
-            result.RawVersionChanges.Add(change);
-            return true;
-        }
-
-        private bool ProcessAssemblyInfoChange(string trimmed, bool isAdd, FileDiffResult result)
-        {
-            Match match = _assemblyInfoRegex.Match(trimmed);
-            if (!match.Success) return false;
-
-            ProjectVersionChange change = new ProjectVersionChange
-            {
-                FileName = _fileName,
-                OldVersion = isAdd ? null : match.Groups[2].Value,
-                NewVersion = isAdd ? match.Groups[2].Value : null,
-                Source = "AssemblyInfo",
-                ChangeType = isAdd ? VersionChangeType.Added : VersionChangeType.Removed,
-                VersionProperty = match.Groups[1].Value
-            };
-            
-            result.RawVersionChanges.Add(change);
-            return true;
-        }
-    }
-
-    #endregion
 }

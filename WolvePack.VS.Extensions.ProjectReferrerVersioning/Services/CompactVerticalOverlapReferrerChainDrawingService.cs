@@ -32,7 +32,13 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             Dictionary<ReferrerChainNode, List<NodeLayout>> parentToChildren = new Dictionary<ReferrerChainNode, List<NodeLayout>>();
             foreach (NodeLayout layout in layouts)
             {
-                NodeLayout parentLayout = FindParent(layout.Node, layouts);
+                NodeLayout parentLayout = null;
+                if (layout.Node.Referrers != null)
+                {
+                    // find any node whose Referrers contains this node (parent in inverted tree)
+                    parentLayout = layouts.Find(l => l.Node.Referrers != null && l.Node.Referrers.Contains(layout.Node));
+                }
+
                 if (parentLayout != null)
                 {
                     ReferrerChainNode parentNode = parentLayout.Node;

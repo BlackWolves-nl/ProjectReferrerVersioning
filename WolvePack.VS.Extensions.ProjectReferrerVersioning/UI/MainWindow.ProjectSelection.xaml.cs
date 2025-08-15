@@ -73,8 +73,10 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             {
                 foreach (ProjectModel project in _filteredProjects)
                 {
-                    project.IsSelected = project.Status == ProjectStatus.Modified || 
-                                       project.Status == ProjectStatus.NuGetOrProjectReferenceChanges;
+                    // Only select modified projects that are not excluded from version updates
+                    project.IsSelected = (project.Status == ProjectStatus.Modified || 
+                                       project.Status == ProjectStatus.NuGetOrProjectReferenceChanges) &&
+                                       !project.IsExcludedFromVersionUpdates;
                 }
             }
         }
@@ -471,6 +473,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                         // Click was on a checkbox, don't toggle row selection
                         return;
                     }
+
                     originalSource = VisualTreeHelper.GetParent(originalSource);
                 }
 

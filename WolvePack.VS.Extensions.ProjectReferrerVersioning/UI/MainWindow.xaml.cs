@@ -94,6 +94,15 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 _drawingService.Theme = _currentTheme; // Ensure theme is set
                 ReferrerTreeCanvas.Background = _currentTheme.BackgroundBrush;
                 drawingService.AllRootNodesUpdated += OnAllRootNodesUpdated;
+
+                // Apply current hide-subsequent-visits state BEFORE any draw calls.
+                bool hide = false;
+                if (HideVisitedCheckBox != null)
+                    hide = HideVisitedCheckBox.IsChecked == true;
+                else if (_userSettings != null)
+                    hide = _userSettings.HideSubsequentVisits; // fallback to persisted setting
+                if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
+                    baseSvc.HideSubsequentVisits = hide;
             }
         }
 
@@ -104,6 +113,12 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             SetThemeFromSettings();
             SetLayoutFromSettings(); // This will set the correct drawing service based on settings
             CanvasZoomHelper.Attach(ReferrerTreeCanvas); // Enable zoom only
+            if (HideVisitedCheckBox != null && _drawingService is ReferrerChainDrawingServiceBase baseSvcLoad)
+            {
+                HideVisitedCheckBox.IsChecked = _userSettings.HideSubsequentVisits;
+                baseSvcLoad.HideSubsequentVisits = _userSettings.HideSubsequentVisits;
+            }
+
             UpdateTreeOutputLegendColors(_drawingService.Theme); // Ensure legend is updated after drawing
             FillProjectSelectionLegendColors();
         }

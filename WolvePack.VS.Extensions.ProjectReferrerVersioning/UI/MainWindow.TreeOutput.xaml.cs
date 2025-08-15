@@ -40,6 +40,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
                 if(_lastGeneratedChains != null)
                 {
+                    if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
+                        baseSvc.HideSubsequentVisits = HideVisitedCheckBox?.IsChecked == true || _userSettings.HideSubsequentVisits;
                     _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
                 }
             }
@@ -148,41 +150,87 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
         private void ExportCanvasToPng(Canvas canvas, string fileName)
         {
-            canvas.UpdateLayout();
+            if (canvas == null) return;
 
-            Rect bounds = VisualTreeHelper.GetDescendantBounds(canvas);
+            // Minimal quality fix strategy:
+            // 1. Temporarily remove any LayoutTransform (zoom) so we capture the logical geometry 1:1.
+            // 2. Enable layout rounding + pixel snapping to align glyph baselines.
+            // 3. Render directly with RenderTargetBitmap.Render(canvas) (avoid VisualBrush indirection).
+            // 4. Restore previous state.
+            // (Further improvements planned separately – see plan in response.)
 
-            double offsetX = bounds.X < 0 ? -bounds.X : 0;
-            double offsetY = bounds.Y < 0 ? -bounds.Y : 0;
-            double width = bounds.Width + offsetX;
-            double height = bounds.Height + offsetY;
+            // Store current transform / settings
+            Transform originalTransform = canvas.LayoutTransform;
+            bool originalSnaps = canvas.SnapsToDevicePixels;
+            bool originalLayoutRounding = canvas.UseLayoutRounding;
 
-            if (width <= 0) width = 800;
-            if (height <= 0) height = 600;
-
-            // Use high DPI for better quality (e.g., 300 DPI)
-            int dpi = 300;
-
-            RenderTargetBitmap rtb = new RenderTargetBitmap(
-                (int)Math.Ceiling(width * dpi / 96.0),
-                (int)Math.Ceiling(height * dpi / 96.0),
-                dpi, dpi,
-                PixelFormats.Pbgra32);
-
-            DrawingVisual dv = new DrawingVisual();
-            using (DrawingContext ctx = dv.RenderOpen())
+            try
             {
-                VisualBrush vb = new VisualBrush(canvas);
-                ctx.DrawRectangle(vb, null, new Rect(offsetX, offsetY, bounds.Width, bounds.Height));
+                // Neutralize zoom transform for crisp baseline geometry
+                canvas.LayoutTransform = Transform.Identity;
+                canvas.UseLayoutRounding = true;
+                canvas.SnapsToDevicePixels = true;
+
+                // Force re-measure/layout
+                canvas.UpdateLayout();
+
+                Rect bounds = VisualTreeHelper.GetDescendantBounds(canvas);
+                if (bounds.IsEmpty) return;
+
+                // Calculate pixel size (1 DIP == 1 pixel at 96 DPI)
+                double width = Math.Ceiling(bounds.Width + (bounds.X < 0 ? -bounds.X : 0));
+                double height = Math.Ceiling(bounds.Height + (bounds.Y < 0 ? -bounds.Y : 0));
+                if (width <= 0 || height <= 0) return;
+
+                int pixelWidth = (int)width;
+                int pixelHeight = (int)height;
+                const double dpi = 96.0;
+
+                // Prepare bitmap
+                RenderTargetBitmap rtb = new RenderTargetBitmap(pixelWidth, pixelHeight, dpi, dpi, PixelFormats.Pbgra32);
+
+                // Translate content if there are negative coordinates (rare but possible with some layouts)
+                if (bounds.X != 0 || bounds.Y != 0)
+                {
+                    // Use a DrawingVisual wrapper to shift content into positive space exactly once
+                    DrawingVisual dv = new DrawingVisual();
+                    using (DrawingContext ctx = dv.RenderOpen())
+                    {
+                        ctx.PushTransform(new TranslateTransform(-bounds.X, -bounds.Y));
+                        VisualBrush vb = new VisualBrush(canvas)
+                        {
+                            Stretch = Stretch.None,
+                            AlignmentX = AlignmentX.Left,
+                            AlignmentY = AlignmentY.Top,
+                            TileMode = TileMode.None
+                        };
+                        ctx.DrawRectangle(vb, null, new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height));
+                        ctx.Pop();
+                    }
+
+                    rtb.Render(dv);
+                }
+                else
+                {
+                    // Direct render (fast path, avoids an extra brush pass)
+                    rtb.Render(canvas);
+                }
+
+                // Encode PNG
+                PngBitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(rtb));
+                using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    encoder.Save(fs);
+                }
             }
-
-            rtb.Render(dv);
-
-            PngBitmapEncoder encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(rtb));
-            using (FileStream fs = new FileStream(fileName, FileMode.Create))
+            finally
             {
-                encoder.Save(fs);
+                // Restore original visual state
+                canvas.LayoutTransform = originalTransform;
+                canvas.SnapsToDevicePixels = originalSnaps;
+                canvas.UseLayoutRounding = originalLayoutRounding;
+                canvas.UpdateLayout();
             }
         }
 
@@ -192,7 +240,12 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             UpdateVersionsButton.IsEnabled = false;
             VersionUpdateResult result = await ReferrerChainService.UpdateVersionsAsync(_lastGeneratedChains, progress => StatusTextBlock.Text = progress);
             StatusTextBlock.Text = "Update complete.";
-            MessageBox.Show(result.Message, "Version Update Summary", MessageBoxButton.OK, result.Errors.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            // Show custom dialog instead of MessageBox
+            Dialogs.VersionUpdateResultWindow dlg = new WolvePack.VS.Extensions.ProjectReferrerVersioning.UI.Dialogs.VersionUpdateResultWindow(result)
+            {
+                Owner = this
+            };
+            dlg.ShowDialog();
 
             // Refresh Version property from .csproj files
             ProjectModel.RefreshVersionsFromCsproj(_allProjects);
@@ -204,6 +257,43 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 _lastGeneratedChains = ReferrerChainService.BuildReferrerChains(selectedProjects, _userSettings.MinimizeChainDrawing);
                 ReferrerTreeCanvas.Children.Clear();
                 _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+            }
+        }
+
+        private void HideVisitedCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
+            {
+                bool newVal = HideVisitedCheckBox.IsChecked == true;
+                baseSvc.HideSubsequentVisits = newVal;
+                // No persistence here (session override)
+                if (_lastGeneratedChains != null)
+                {
+                    ReferrerTreeCanvas.Children.Clear();
+                    _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+                }
+            }
+        }
+
+        private void ExportSvgButton_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "SVG Image|*.svg",
+                FileName = "ProjectReferrerTree.svg"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    Services.SvgExportService.Export(ReferrerTreeCanvas, dlg.FileName);
+                    StatusTextBlock.Text = "SVG exported.";
+                }
+                catch (Exception ex)
+                {
+                    StatusTextBlock.Text = "SVG export failed.";
+                    Helpers.DebugHelper.ShowError("SVG export failed: " + ex.Message, "ExportSvgButton");
+                }
             }
         }
     }

@@ -284,6 +284,12 @@
                                 <Button x:Name="ZoomInButton" Content="+" Width="28" Height="28" Margin="0,0,2,0" Click="ZoomInButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
                                 <Button x:Name="ZoomFitButton" Content="Fit" Width="40" Height="28" Click="ZoomFitButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
                                 <Button x:Name="ExportPngButton" Content="Export PNG" Width="90" Height="28" Margin="8,0,0,0" Click="ExportPngButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                                <Button x:Name="ExportSvgButton" Content="Export SVG" Width="90" Height="28" Margin="4,0,0,0" Click="ExportSvgButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                                <CheckBox x:Name="HideVisitedCheckBox" Margin="16,0,0,0" VerticalAlignment="Center" Checked="HideVisitedCheckBox_Changed" Unchecked="HideVisitedCheckBox_Changed">
+                                    <CheckBox.Content>
+                                        <TextBlock Text="Hide Subsequent Visits" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                    </CheckBox.Content>
+                                </CheckBox>
                             </StackPanel>
                             <!-- Color Legend -->
                             <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,0,0,8">
@@ -380,18 +386,26 @@
                         </CheckBox.Content>
                     </CheckBox>
 
+                    <!-- Hide Subsequent Visits (persisted) -->
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Hide Subsequent Visits:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <CheckBox Grid.Row="4" Grid.Column="1" x:Name="HideSubsequentVisitsCheckBox" Margin="0,12,0,12" VerticalAlignment="Center" HorizontalAlignment="Left">
+                        <CheckBox.Content>
+                            <TextBlock Text="Hide duplicate project nodes (and their descendant branches) after first appearance" Style="{StaticResource ThemedTextBlockStyle}"/>
+                        </CheckBox.Content>
+                    </CheckBox>
+
                     <!-- Versioning Mode -->
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Versioning Mode:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
-                    <ComboBox Grid.Row="4" Grid.Column="1" x:Name="VersioningModeComboBox" Width="250" Margin="0,12,0,12" HorizontalAlignment="Left">
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Versioning Mode:" FontWeight="Bold" Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <ComboBox Grid.Row="5" Grid.Column="1" x:Name="VersioningModeComboBox" Width="250" Margin="0,12,0,12" HorizontalAlignment="Left">
                         <ComboBoxItem Content="Major.Minor.Patch.Revision" Tag="FourPart"/>
                         <ComboBoxItem Content="Major.Minor.Patch" Tag="ThreePart"/>
                     </ComboBox>
 
                     <!-- Save Button -->
-                    <Button Grid.Row="5" Grid.Column="1" Content="Save Settings" Width="120" Height="32" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveSettingsButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                    <Button Grid.Row="6" Grid.Column="1" Content="Save Settings" Width="120" Height="32" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveSettingsButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
                     
                     <!-- Status TextBlock -->
-                    <TextBlock Grid.Row="6" Grid.Column="1" x:Name="SettingsStatusTextBlock" Foreground="#4CAF50" FontWeight="Bold" Margin="0,16,0,0" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <TextBlock Grid.Row="7" Grid.Column="1" x:Name="SettingsStatusTextBlock" Foreground="#4CAF50" FontWeight="Bold" Margin="0,16,0,0" Style="{StaticResource ThemedTextBlockStyle}"/>
                 </Grid>
             </TabItem>
         </TabControl>

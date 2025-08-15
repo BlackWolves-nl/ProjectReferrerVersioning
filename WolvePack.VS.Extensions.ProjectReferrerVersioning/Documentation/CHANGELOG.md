@@ -7,6 +7,27 @@
   - Revision bump disabled in 3-part mode.
   - Automatic child propagation uses Patch when in 3-part mode.
   - Setting persisted per user; affects version bump menus and propagation logic.
+- **Themed Version Update Result Dialog**: Replaced plain MessageBox with a fully themed, resizable dialog.
+  - Shows separate success and error lines with color coding (green / red).
+  - Live filtering toggles (show/hide successes & errors).
+  - Copy actions: Copy All, Copy Errors only, Copy Successes only.
+  - Counts header summarizing totals.
+  - Deferred loading to avoid premature filter events; pixel perfect with existing theme resources.
+- **Hide Subsequent Visits (Duplicate Pruning)**:
+  - New persisted setting (Settings tab) plus a session-only toolbar checkbox to visually hide duplicate project nodes after first occurrence.
+  - When enabled, all three layouts (Standard, Compact Horizontal, Compact Vertical) perform a compact rebuild that prunes duplicate branches and reclaims vertical space (no blank gaps).
+  - Edges and node coordinates recomputed; export & highlighting honor suppression.
+  - Switching layouts now respects the current checkbox/setting automatically.
+  - Session toggle (Tree Output tab) no longer auto-saves; persisted value controlled via Settings tab.
+- **SVG Export**: Added Export SVG button to Tree Output toolbar.
+  - Recreates current tree (layout, gradients, node colors, edges, arrowheads, badges, text) as scalable SVG.
+  - Background color, gradients, and stroke styles preserved (drop shadows omitted for file size/perf).
+  - Honors Hide Subsequent Visits and Minimize Chain Drawing settings.
+
+### Improvements
+- **Compact Layout Space Reclaim**: Previous implementation only skipped drawing; now layouts fully recompute rows to eliminate empty vertical gaps.
+- **Initial Layout State**: New drawing services immediately adopt current Hide Subsequent Visits state when switching layouts or applying user settings.
+- **Consistent Child Edge Routing**: Adjusted compact layout algorithms so first child nodes render directly beneath parents (vertical-first edge path) across all layouts.
 
 ## [2.4.0.0] - Project Selection Improvements
 
@@ -123,7 +144,6 @@
 - **Enhanced Git root detection**: Comprehensive logging and multiple fallback methods for Git repository detection
 - **Real-time debug control**: Debug logging can be enabled/disabled immediately without restarting the extension
 - **Improved error diagnostics**: Enhanced logging throughout Git analysis and project discovery processes
-- **Debug log file location**: Logs are written to `C:\Temp\WolvePack.PRV.txt` with timestamp and thread information
 - **Git worktree support**: Enhanced Git root detection now supports Git worktrees (`.git` files) in addition to standard repositories
 - **Fallback mechanisms**: Multiple strategies for finding Git root when primary method fails
   - Solution file directory analysis

@@ -21,14 +21,31 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
 
             List<NodeLayout> layouts = new List<NodeLayout>();
             Dictionary<ReferrerChainNode, string> nodePaths = new Dictionary<ReferrerChainNode, string>();
-            int currentRow = 0;
-            int rootIndex = 1;
-            foreach (ReferrerChainNode root in roots)
+
+            if (!HideSubsequentVisits)
             {
-                AssignPaths(root, rootIndex.ToString(), nodePaths);
-                LayoutTree(root, 0, ref currentRow, layouts, new HashSet<ProjectModel>());
-                currentRow++;
-                rootIndex++;
+                int currentRow = 0;
+                int rootIndex = 1;
+                foreach (ReferrerChainNode root in roots)
+                {
+                    AssignPaths(root, rootIndex.ToString(), nodePaths);
+                    LayoutTree(root, 0, ref currentRow, layouts, new HashSet<ProjectModel>());
+                    currentRow++;
+                    rootIndex++;
+                }
+            }
+            else
+            {
+                // Compact rebuild: prune duplicate project occurrences and reclaim vertical space
+                HashSet<ProjectModel> seen = new HashSet<ProjectModel>();
+                int currentRow = 0;
+                int rootIndex = 1;
+                foreach (ReferrerChainNode root in roots)
+                {
+                    BuildCompact(root, depth: 0, ref currentRow, layouts, seen, path: rootIndex.ToString(), nodePaths);
+                    currentRow++; // separation between root groups
+                    rootIndex++;
+                }
             }
 
             _nodePaths = nodePaths;
@@ -49,13 +66,13 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             canvas.Width = totalWidth;
             canvas.Height = totalHeight;
 
-            // Draw all lines and arrowheads first
+            // Draw edges first (only between visible layouts)
             foreach (NodeLayout layout in layouts)
             {
                 foreach (ReferrerChainNode child in layout.Node.Referrers)
                 {
                     NodeLayout childLayout = layouts.Find(l => l.Node == child);
-                    if (childLayout == null) continue;
+                    if (childLayout == null) continue; // child pruned in compact mode
 
                     double parentX = hSpace + layout.Depth * (nodeW + hSpace - overlapX);
                     double parentY = vSpace + layout.Row * (nodeH + vSpace - overlapY);
@@ -69,22 +86,38 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     double endX = childX;
                     double endY = midY;
 
-                    string parentPath = nodePaths[layout.Node];
-                    string childPath = nodePaths[child];
-                    DrawLine(canvas, startX, startY, midX, midY, layout.Node.Project.Name, child.Project.Name, parentPath, childPath); // vertical, tag for hover
-                    DrawLine(canvas, midX, midY, endX, endY, layout.Node.Project.Name, child.Project.Name, parentPath, childPath); // horizontal, tag + arrowhead
+                    string parentPath = nodePaths.ContainsKey(layout.Node) ? nodePaths[layout.Node] : null;
+                    string childPath = nodePaths.ContainsKey(child) ? nodePaths[child] : null;
+                    DrawLine(canvas, startX, startY, midX, midY, layout.Node.Project.Name, child.Project.Name, parentPath, childPath);
+                    DrawLine(canvas, midX, midY, endX, endY, layout.Node.Project.Name, child.Project.Name, parentPath, childPath);
                 }
             }
 
-            // Draw all nodes and text after lines/arrowheads
             HashSet<ProjectModel> visitedProjects = new HashSet<ProjectModel>();
             foreach (NodeLayout layout in layouts)
             {
                 double x = hSpace + layout.Depth * (nodeW + hSpace - overlapX);
                 double y = vSpace + layout.Row * (nodeH + vSpace - overlapY);
                 System.Windows.Media.Brush brush = GetNodeBrush(layout.Node, layout.Depth == 0, visitedProjects);
-                DrawNode(canvas, layout.Node, x, y, brush, nodePaths[layout.Node]);
+                DrawNode(canvas, layout.Node, x, y, brush, nodePaths.ContainsKey(layout.Node) ? nodePaths[layout.Node] : null);
                 visitedProjects.Add(layout.Node.Project);
+            }
+        }
+
+        private void BuildCompact(ReferrerChainNode node, int depth, ref int currentRow, List<NodeLayout> layouts, HashSet<ProjectModel> seen, string path, Dictionary<ReferrerChainNode, string> nodePaths)
+        {
+            if (node == null) return;
+            if (seen.Contains(node.Project)) return; // prune duplicate subtree
+            seen.Add(node.Project);
+            nodePaths[node] = path;
+            int rowForThis = currentRow;
+            layouts.Add(new NodeLayout { Node = node, Depth = depth, Row = rowForThis });
+            currentRow++; // move to next available row for children
+            int childIndex = 1;
+            foreach (var child in node.Referrers)
+            {
+                BuildCompact(child, depth + 1, ref currentRow, layouts, seen, path + "." + childIndex, nodePaths);
+                childIndex++;
             }
         }
     }

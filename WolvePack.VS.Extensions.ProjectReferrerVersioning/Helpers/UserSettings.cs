@@ -12,6 +12,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers
         public string DefaultLayout { get; set; } = "Standard (Tree)";
         public bool DebugEnabled { get; set; } = false;
         public bool MinimizeChainDrawing { get; set; } = false;
+        public bool HideSubsequentVisits { get; set; } = false;
         public VersioningMode VersioningMode { get; set; } = VersioningMode.FourPart;
 
         public static VersioningMode ActiveVersioningMode { get; set; } = VersioningMode.FourPart;

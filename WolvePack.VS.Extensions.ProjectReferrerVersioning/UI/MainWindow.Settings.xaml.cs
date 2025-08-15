@@ -38,6 +38,9 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             
             // Set minimize chain drawing checkbox
             MinimizeChainDrawingCheckBox.IsChecked = _userSettings.MinimizeChainDrawing;
+            // Set hide subsequent visits (persisted setting)
+            HideSubsequentVisitsCheckBox.IsChecked = _userSettings.HideSubsequentVisits;
+            HideVisitedCheckBox.IsChecked = _userSettings.HideSubsequentVisits; // initial sync for tree tab
 
             // Set versioning mode
             foreach(ComboBoxItem item in VersioningModeComboBox.Items)
@@ -59,6 +62,14 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             _userSettings.DefaultLayout = (DefaultLayoutComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Standard (Tree)";
             _userSettings.DebugEnabled = DebugEnabledCheckBox.IsChecked ?? false;
             _userSettings.MinimizeChainDrawing = MinimizeChainDrawingCheckBox.IsChecked ?? false;
+            _userSettings.HideSubsequentVisits = (HideSubsequentVisitsCheckBox.IsChecked ?? false);
+            if (HideVisitedCheckBox != null)
+            {
+                if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
+                    baseSvc.HideSubsequentVisits = _userSettings.HideSubsequentVisits;
+                HideVisitedCheckBox.IsChecked = _userSettings.HideSubsequentVisits; // reflect persisted value
+            }
+
             if(VersioningModeComboBox.SelectedItem is ComboBoxItem vmItem && vmItem.Tag is string tag)
             {
                 if(Enum.TryParse(tag, out VersioningMode mode))
@@ -93,11 +104,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
         private void DebugEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            // Apply debug setting immediately when checkbox is toggled
             bool debugEnabled = DebugEnabledCheckBox.IsChecked ?? false;
             DebugHelper.DebugEnabled = debugEnabled;
-            
-            // Log the change
             DebugHelper.Log($"Debug logging {(debugEnabled ? "enabled" : "disabled")} via Settings UI", "Settings");
         }
 
@@ -110,7 +118,6 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 DependencyObject child = VisualTreeHelper.GetChild(parent, i);
                 if (child is FrameworkElement fe)
                 {
-                    // Only re-apply style if it was explicitly set
                     if (fe.ReadLocalValue(FrameworkElement.StyleProperty) != DependencyProperty.UnsetValue)
                     {
                         Style style = fe.Style;
@@ -121,11 +128,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                     fe.Resources = fe.Resources;
                     fe.InvalidateVisual();
                     fe.InvalidateProperty(FrameworkElement.StyleProperty);
-                    // Only call ApplyTemplate for controls (do NOT set Template = null)
                     if (fe is Control ctrl)
-                    {
                         ctrl.ApplyTemplate();
-                    }
                 }
 
                 RefreshThemeResources(child);
@@ -134,19 +138,16 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
 
         private void SetThemeFromSettings()
         {
-            // Remove previous theme dictionaries from Application
             System.Collections.Generic.List<ResourceDictionary> themeDicts = Application.Current.Resources.MergedDictionaries
                 .Where(d => d.Source != null && d.Source.OriginalString.Contains("Theme.")).ToList();
             foreach (ResourceDictionary dict in themeDicts)
                 Application.Current.Resources.MergedDictionaries.Remove(dict);
 
-            // Remove previous theme dictionaries from MainWindow instance
             System.Collections.Generic.List<ResourceDictionary> localThemeDicts = this.Resources.MergedDictionaries
                 .Where(d => d.Source != null && d.Source.OriginalString.Contains("Theme.")).ToList();
             foreach (ResourceDictionary dict in localThemeDicts)
                 this.Resources.MergedDictionaries.Remove(dict);
 
-            // Load new theme dictionary
             string themeName = _userSettings.DefaultTheme ?? "Dark";
             ResourceDictionary newDict = new ResourceDictionary
             {
@@ -155,7 +156,6 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             Application.Current.Resources.MergedDictionaries.Add(newDict);
             this.Resources.MergedDictionaries.Add(newDict);
 
-            // Apply theme to drawing service and canvas
             _currentTheme = ReferrerChainTheme.LoadThemeFromResources();
 
             if (_drawingService != null)
@@ -165,13 +165,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 UpdateTreeOutputLegendColors(_currentTheme);
             }
 
-            // Force refresh of all controls to update theme
             RefreshThemeResources(this);
         }
 
         private void SetLayoutFromSettings()
         {
-            // Set the LayoutComboBox on the Tree Output tab
             foreach (ComboBoxItem item in LayoutComboBox.Items)
             {
                 if (item.Content.ToString() == _userSettings.DefaultLayout)

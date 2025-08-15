@@ -22,7 +22,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
     {
         /// <inheritdoc />
         public ReferrerChainTheme Theme { get; set; }
-
+        /// <summary>
+        /// When true, any subsequent occurrence of a project (after its first draw) and its descendants
+        /// are not drawn (purely visual suppression – stats unchanged).
+        /// </summary>
+        public bool HideSubsequentVisits { get; set; }
         /// <inheritdoc />
         public abstract ReferrerChainLayoutMode LayoutMode { get; }
 
@@ -71,6 +75,9 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
         /// </summary>
         protected void DrawNode(Canvas canvas, ReferrerChainNode node, double x, double y, Brush fill, string nodePath = null)
         {
+            // Snap the incoming layout coordinates to whole device pixels for sharper text rendering
+            double px = Math.Round(x);
+            double py = Math.Round(y);
             // Background gradient for subtle depth (avoid flat color blocks)
             Color baseColor = ((SolidColorBrush)fill).Color;
             Color gradColor = Color.Multiply(baseColor, 1.15f);
@@ -105,6 +112,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     Opacity = 0.18
                 },
                 IsHitTestVisible = true,
+                SnapsToDevicePixels = true,
                 Tag = new ReferrerChainNodeTag
                 {
                     NodePath = nodePath,
@@ -112,8 +120,11 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                 }
             };
 
-            Canvas.SetLeft(rect, x);
-            Canvas.SetTop(rect, y);
+            Canvas.SetLeft(rect, px);
+            Canvas.SetTop(rect, py);
+            RenderOptions.SetBitmapScalingMode(rect, BitmapScalingMode.HighQuality);
+            TextOptions.SetTextFormattingMode(rect, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(rect, TextRenderingMode.ClearType);
             canvas.Children.Add(rect);
 
             // Hover effects cascade through path to root and duplicate project nodes
@@ -182,7 +193,8 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
             lines.Add((versionText, Theme.FontSize - 2, Theme.VersionFontWeight));
 
             double totalHeight = lines.Sum(l => l.Size + 2) - 2;
-            double textY = y + (Theme.NodeHeight - totalHeight) / 2;
+            double textY = py + (Theme.NodeHeight - totalHeight) / 2;
+            textY = Math.Round(textY); // snap baseline start
 
             foreach ((string Text, double Size, FontWeight Weight) in lines)
             {
@@ -197,18 +209,24 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services
                     TextAlignment = TextAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Width = Theme.NodeWidth - 20,
-                    IsHitTestVisible = false
+                    IsHitTestVisible = false,
+                    SnapsToDevicePixels = true
                 };
-                Canvas.SetLeft(tb, x + 10);
-                Canvas.SetTop(tb, textY);
+                TextOptions.SetTextFormattingMode(tb, TextFormattingMode.Display);
+                TextOptions.SetTextRenderingMode(tb, TextRenderingMode.ClearType);
+                RenderOptions.SetClearTypeHint(tb, ClearTypeHint.Enabled);
+                double tx = Math.Round(px + 10); // ensure integer
+                double ty = Math.Round(textY);
+                Canvas.SetLeft(tb, tx);
+                Canvas.SetTop(tb, ty);
                 Panel.SetZIndex(tb, 1);
                 canvas.Children.Add(tb);
                 textY += Size + 2;
             }
 
             // Supplemental adornments
-            DrawGitBadge(canvas, node, x, y);
-            DrawRootBadge(canvas, node, x, y);
+            DrawGitBadge(canvas, node, px, py);
+            DrawRootBadge(canvas, node, px, py);
         }
 
         /// <summary>

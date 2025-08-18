@@ -43,6 +43,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                     if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
                         baseSvc.HideSubsequentVisits = HideVisitedCheckBox?.IsChecked == true || _userSettings.HideSubsequentVisits;
                     _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+                    UpdateTreeStats();
                 }
             }
         }
@@ -106,6 +107,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                     _drawingService.BumpChildRevisionsIfAllRootsSet(ReferrerTreeCanvas, _lastGeneratedChains);
                     // Draw the tree output (must be after bumping revisions to reflect changes)
                     _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+                    UpdateTreeStats();
 
                     // Switch to the tree output tab
                     MainTabControl.SelectedItem = TabTreeOutput;
@@ -148,7 +150,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
             }
         }
 
-        private void ExportCanvasToPng(Canvas canvas, string fileName)
+        private void ExportCanvasToPng(Canvas canvas, String fileName)
         {
             if (canvas == null) return;
 
@@ -257,6 +259,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 _lastGeneratedChains = ReferrerChainService.BuildReferrerChains(selectedProjects, _userSettings.MinimizeChainDrawing);
                 ReferrerTreeCanvas.Children.Clear();
                 _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+                UpdateTreeStats();
             }
         }
 
@@ -271,6 +274,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                 {
                     ReferrerTreeCanvas.Children.Clear();
                     _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
+                    UpdateTreeStats();
                 }
             }
         }
@@ -295,6 +299,44 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
                     Helpers.DebugHelper.ShowError("SVG export failed: " + ex.Message, "ExportSvgButton");
                 }
             }
+        }
+
+        private void UpdateTreeStats()
+        {
+            if (TreeStatsText == null)
+                return;
+            if (_lastGeneratedChains == null || _lastGeneratedChains.Count == 0)
+            {
+                TreeStatsText.Text = "No tree generated";
+                return;
+            }
+            // Count roots
+            int rootCount = _lastGeneratedChains.Count;
+            // Gather all nodes (instances) and unique projects from the current chains
+            var visitedNodeInstances = new System.Collections.Generic.HashSet<ReferrerChainNode>();
+            var uniqueProjects = new System.Collections.Generic.HashSet<ProjectModel>();
+            void Traverse(ReferrerChainNode n)
+            {
+                if (n == null || !visitedNodeInstances.Add(n)) return;
+                if (n.Project != null) uniqueProjects.Add(n.Project);
+                foreach (var c in n.Referrers) Traverse(c);
+            }
+            foreach (var r in _lastGeneratedChains) Traverse(r);
+            int totalGraphNodes = visitedNodeInstances.Count;
+            int uniqueProjectCount = uniqueProjects.Count;
+            // Count drawn rectangles (WPF nodes) & edges currently on canvas
+            int drawnNodeRects = 0; int drawnEdges = 0;
+            foreach (var child in ReferrerTreeCanvas.Children)
+            {
+                if (child is System.Windows.Shapes.Rectangle rect && rect.Tag is ReferrerChainDrawingServiceBase.ReferrerChainNodeTag)
+                    drawnNodeRects++;
+                else if (child is System.Windows.Shapes.Line line && line.Tag is ReferrerChainDrawingServiceBase.ReferrerChainEdgeTag)
+                    drawnEdges++;
+            }
+            // If some nodes suppressed (Hide Subsequent Visits), drawnNodeRects < totalGraphNodes
+            int suppressed = totalGraphNodes - drawnNodeRects;
+            string suppressedPart = suppressed > 0 ? $"  Suppressed: {suppressed}" : string.Empty;
+            TreeStatsText.Text = $"Roots: {rootCount}  Nodes Drawn: {drawnNodeRects}  Unique Projects: {uniqueProjectCount}  Total Graph Nodes: {totalGraphNodes}{suppressedPart}  Edges: {drawnEdges}";
         }
     }
 }

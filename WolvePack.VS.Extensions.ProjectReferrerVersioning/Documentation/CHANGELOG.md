@@ -1,4 +1,27 @@
-# Changelog
+﻿# Changelog
+
+## [2.5.1.0] - SVG Export & Tree Stats Improvements
+
+### New / Visible Features
+- **Tree Statistics Bar**: `TreeStatsText` now populated after each tree generation / layout change.
+  - Shows Roots, Nodes Drawn, Unique Projects, Total Graph Nodes, Suppressed (when Hide Subsequent Visits on), and Edges.
+
+### SVG Export Enhancements
+- **Color Fidelity Fixes**: Reworked exporter to avoid #AARRGGBB usage (which some viewers interpret incorrectly) by emitting #RRGGBB + explicit opacity.
+- **Per-Node Gradients**: Each node rectangle uses a `userSpaceOnUse` gradient matching on-screen orientation & intensity.
+- **Accurate Text Extraction**: Recursive visual tree walk captures node/project text, version lines, root badge, and circular badge counts.
+- **Badge Text Centering Iterations**: Added ellipse-center based placement with optical left / vertical adjustments; pill (expanded) text suppressed.
+- **Hidden Element Filtering**: Skips text contained in collapsed / hidden pill containers.
+- **Refactored Layout Logic**: Removed earlier duplicate / corrupted export code; simplified to single pass (lines → shapes → text).
+
+### Misc Improvements
+- **Stats-Friendly Redraws**: All redraw triggers (generation, layout switch, hide-subsequent toggle, version update) now refresh stats.
+- **Safer Canvas Size Handling**: Export routines guard against zero / NaN canvas dimensions.
+
+### Internal / Technical
+- Consolidated badge handling into a single detection path (`TryGetBadgeCenter`).
+- Added suppression logic for duplicate project instances vs. drawn rectangles when computing Suppressed count.
+- Reduced risk of malformed SVG via consistent escaping and invariant culture formatting.
 
 ## [2.5.0.0] - (Unreleased) Custom Versioning Mode
 

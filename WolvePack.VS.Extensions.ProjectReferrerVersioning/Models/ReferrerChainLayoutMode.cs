@@ -1,9 +1,8 @@
-namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models
+namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models;
+
+public enum ReferrerChainLayoutMode
 {
-    public enum ReferrerChainLayoutMode
-    {
-        Standard,
-        CompactHorizontal,
-        CompactVertical
-    }
+    Standard,
+    CompactHorizontal,
+    CompactVertical
 }

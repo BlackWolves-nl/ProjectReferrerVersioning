@@ -1,5 +1,10 @@
 ﻿# Changelog
 
+## [2.6.0.0] - Version Propagation Improvements
+- **Missing version elements**: Improved handling of projects with missing version elements in their project files.
+  - Projects without `<Version>`,`<FileVersion>` or `<AssemblyVersion>` element will now have these elements added during version updates.
+- **Code clean**: Refactored code with c# lang version updates.
+
 ## [2.5.1.0] - SVG Export & Tree Stats Improvements
 
 ### New / Visible Features

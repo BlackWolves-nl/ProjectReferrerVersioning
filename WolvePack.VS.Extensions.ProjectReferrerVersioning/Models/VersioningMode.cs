@@ -1,8 +1,7 @@
-namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models
+namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models;
+
+public enum VersioningMode
 {
-    public enum VersioningMode
-    {
-        FourPart, // Major.Minor.Patch.Revision
-        ThreePart // Major.Minor.Patch
-    }
+    FourPart, // Major.Minor.Patch.Revision
+    ThreePart // Major.Minor.Patch
 }

@@ -15,112 +15,110 @@ using WolvePack.VS.Extensions.ProjectReferrerVersioning.Services;
 
 using Window = System.Windows.Window;
 
-namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI
+namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.UI;
+
+public partial class MainWindow : Window
 {
-    public partial class MainWindow : Window
+    public List<ReferrerChainNode> LastGeneratedChains => _lastGeneratedChains;
+    public IReferrerChainDrawingService DrawingService => _drawingService;
+    public System.Windows.Controls.Canvas ReferrerTreeCanvasPublic => ReferrerTreeCanvas;
+
+    private List<ReferrerChainNode> _lastGeneratedChains;
+    private ReferrerChainTheme _currentTheme;
+    private IReferrerChainDrawingService _drawingService;
+
+    public MainWindow(List<Project> preSelectedProjects = null)
     {
-        public List<ReferrerChainNode> LastGeneratedChains => _lastGeneratedChains;
-        public IReferrerChainDrawingService DrawingService => _drawingService;
-        public System.Windows.Controls.Canvas ReferrerTreeCanvasPublic => ReferrerTreeCanvas;
+        InitializeComponent();
+        _userSettings = UserSettings.Load();
+        ApplyUserSettingsToUI();
 
-        private List<ReferrerChainNode> _lastGeneratedChains;
-        private ReferrerChainTheme _currentTheme;
-        private IReferrerChainDrawingService _drawingService;
+        // Ensure DataContext is set for DataGrid binding
+        this.DataContext = this;
 
-        public MainWindow(List<Project> preSelectedProjects = null)
+        // Add UI refresh timer for better responsiveness
+        System.Windows.Threading.DispatcherTimer refreshTimer = new()
         {
-            InitializeComponent();
-            _userSettings = UserSettings.Load();
-            ApplyUserSettingsToUI();
+            Interval = TimeSpan.FromMilliseconds(100)
+        };
+        refreshTimer.Tick += (s, e) =>
+        {
+            // Force UI refresh periodically
+            ProjectItemsGrid?.UpdateLayout();
+        };
+        refreshTimer.Start();
 
-            // Ensure DataContext is set for DataGrid binding
-            this.DataContext = this;
+        _ = InitializeWindowAsync(preSelectedProjects);
+    }
 
-            // Add UI refresh timer for better responsiveness
-            System.Windows.Threading.DispatcherTimer refreshTimer = new System.Windows.Threading.DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(100)
-            };
-            refreshTimer.Tick += (s, e) =>
-            {
-                // Force UI refresh periodically
-                ProjectItemsGrid?.UpdateLayout();
-            };
-            refreshTimer.Start();
+    private async Task InitializeWindowAsync(List<Project> preSelectedProjects)
+    {
+        try
+        {
+            StatusTextBlock.Text = "Loading projects...";
 
-            _ = InitializeWindowAsync(preSelectedProjects);
+            // Load projects asynchronously with progress reporting
+            await LoadProjectsWithProgressAsync(preSelectedProjects);
         }
-
-        private async Task InitializeWindowAsync(List<Project> preSelectedProjects)
+        catch (Exception ex)
         {
-            try
-            {
-                StatusTextBlock.Text = "Loading projects...";
-
-                // Load projects asynchronously with progress reporting
-                await LoadProjectsWithProgressAsync(preSelectedProjects);
-            }
-            catch (Exception ex)
-            {
-                StatusTextBlock.Text = $"Error loading projects: {ex.Message}";
-                // Reduce debug noise in release builds
+            StatusTextBlock.Text = $"Error loading projects: {ex.Message}";
+            // Reduce debug noise in release builds
 #if DEBUG
-                DebugHelper.ShowError($"InitializeWindow error: {ex.Message}", "InitializeWindow");
+            DebugHelper.ShowError($"InitializeWindow error: {ex.Message}", "InitializeWindow");
 #endif
-            }
         }
+    }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void OnAllRootNodesUpdated()
+    {
+        UpdateVersionsButton?.IsEnabled = true;
+    }
+
+    private void SetDrawingService(IReferrerChainDrawingService drawingService)
+    {
+        if (_drawingService != null)
         {
-            Close();
+            _drawingService.AllRootNodesUpdated -= OnAllRootNodesUpdated;
         }
 
-        private void OnAllRootNodesUpdated()
+        _drawingService = drawingService;
+        if (_drawingService != null)
         {
-            if (UpdateVersionsButton != null)
-                UpdateVersionsButton.IsEnabled = true;
-        }
+            _drawingService.Theme = _currentTheme; // Ensure theme is set
+            ReferrerTreeCanvas.Background = _currentTheme.BackgroundBrush;
+            drawingService.AllRootNodesUpdated += OnAllRootNodesUpdated;
 
-        private void SetDrawingService(IReferrerChainDrawingService drawingService)
+            // Apply current hide-subsequent-visits state BEFORE any draw calls.
+            bool hide = false;
+            if (HideVisitedCheckBox != null)
+                hide = HideVisitedCheckBox.IsChecked == true;
+            else if (_userSettings != null)
+                hide = _userSettings.HideSubsequentVisits; // fallback to persisted setting
+            if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
+                baseSvc.HideSubsequentVisits = hide;
+        }
+    }
+
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        // Apply settings to main UI theme/layout on load
+        ApplyUserSettingsToUI();
+        SetThemeFromSettings();
+        SetLayoutFromSettings(); // This will set the correct drawing service based on settings
+        CanvasZoomHelper.Attach(ReferrerTreeCanvas); // Enable zoom only
+        if (HideVisitedCheckBox != null && _drawingService is ReferrerChainDrawingServiceBase baseSvcLoad)
         {
-            if (_drawingService != null)
-            {
-                _drawingService.AllRootNodesUpdated -= OnAllRootNodesUpdated;
-            }
-
-            _drawingService = drawingService;
-            if (_drawingService != null)
-            {
-                _drawingService.Theme = _currentTheme; // Ensure theme is set
-                ReferrerTreeCanvas.Background = _currentTheme.BackgroundBrush;
-                drawingService.AllRootNodesUpdated += OnAllRootNodesUpdated;
-
-                // Apply current hide-subsequent-visits state BEFORE any draw calls.
-                bool hide = false;
-                if (HideVisitedCheckBox != null)
-                    hide = HideVisitedCheckBox.IsChecked == true;
-                else if (_userSettings != null)
-                    hide = _userSettings.HideSubsequentVisits; // fallback to persisted setting
-                if (_drawingService is ReferrerChainDrawingServiceBase baseSvc)
-                    baseSvc.HideSubsequentVisits = hide;
-            }
+            HideVisitedCheckBox.IsChecked = _userSettings.HideSubsequentVisits;
+            baseSvcLoad.HideSubsequentVisits = _userSettings.HideSubsequentVisits;
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            // Apply settings to main UI theme/layout on load
-            ApplyUserSettingsToUI();
-            SetThemeFromSettings();
-            SetLayoutFromSettings(); // This will set the correct drawing service based on settings
-            CanvasZoomHelper.Attach(ReferrerTreeCanvas); // Enable zoom only
-            if (HideVisitedCheckBox != null && _drawingService is ReferrerChainDrawingServiceBase baseSvcLoad)
-            {
-                HideVisitedCheckBox.IsChecked = _userSettings.HideSubsequentVisits;
-                baseSvcLoad.HideSubsequentVisits = _userSettings.HideSubsequentVisits;
-            }
-
-            UpdateTreeOutputLegendColors(_drawingService.Theme); // Ensure legend is updated after drawing
-            FillProjectSelectionLegendColors();
-        }
+        UpdateTreeOutputLegendColors(_drawingService.Theme); // Ensure legend is updated after drawing
+        FillProjectSelectionLegendColors();
     }
 }

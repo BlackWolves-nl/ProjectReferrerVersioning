@@ -215,39 +215,42 @@ public static class GitService
     private static async Task<FileAnalysisResults> AnalyzeChangedFilesAsync(string repoRoot, List<string> changedFiles)
     {
         FileAnalysisResults results = new();
-        foreach (string relFile in changedFiles)
+
+        // Analyze each file's diff concurrently instead of one git process at a time. Each task builds its own
+        // local result (AnalyzeSingleFileAsync catches its own errors) so nothing is written to a shared object
+        // from multiple tasks at once. RunGitCommandAsync's semaphore bounds real OS concurrency.
+        FileDiffResult[] fileResults = await Task.WhenAll(changedFiles.Select(relFile => AnalyzeSingleFileAsync(repoRoot, relFile)));
+
+        foreach (FileDiffResult fileResult in fileResults)
         {
-            try
-            {
-                await AnalyzeSingleFileAsync(repoRoot, relFile, results);
-            }
-            catch (Exception ex)
-            {
-                DebugHelper.Log($"AnalyzeProject: Error processing changed file '{relFile}': {ex.Message}", nameof(GitService));
-                results.HasOtherChanges = true;
-            }
+            results.ReferenceChanges.AddRange(fileResult.NugetChanges);
+            results.ReferenceChanges.AddRange(fileResult.RefChanges);
+            results.VersionChanges.AddRange(fileResult.VersionChanges);
+            if (fileResult.HasOtherChanges) results.HasOtherChanges = true;
         }
 
         return results;
     }
 
-    private static async Task AnalyzeSingleFileAsync(string repoRoot, string relFile, FileAnalysisResults results)
+    private static async Task<FileDiffResult> AnalyzeSingleFileAsync(string repoRoot, string relFile)
     {
-        string absFile = Path.Combine(repoRoot, relFile);
-        string ext = Path.GetExtension(absFile).ToLowerInvariant();
-        string fileName = Path.GetFileName(absFile);
-        if (IsAnalyzableFile(ext, fileName))
+        try
         {
-            string diff = await GetGitDiffAsync(repoRoot, absFile);
-            FileDiffResult diffResult = AnalyzeProjectFileDiff(absFile, diff);
-            results.ReferenceChanges.AddRange(diffResult.NugetChanges);
-            results.ReferenceChanges.AddRange(diffResult.RefChanges);
-            results.VersionChanges.AddRange(diffResult.VersionChanges);
-            if (diffResult.HasOtherChanges) results.HasOtherChanges = true;
+            string absFile = Path.Combine(repoRoot, relFile);
+            string ext = Path.GetExtension(absFile).ToLowerInvariant();
+            string fileName = Path.GetFileName(absFile);
+            if (IsAnalyzableFile(ext, fileName))
+            {
+                string diff = await GetGitDiffAsync(repoRoot, absFile);
+                return AnalyzeProjectFileDiff(absFile, diff);
+            }
+
+            return new FileDiffResult { HasOtherChanges = true };
         }
-        else
+        catch (Exception ex)
         {
-            results.HasOtherChanges = true;
+            DebugHelper.Log($"AnalyzeProject: Error processing changed file '{relFile}': {ex.Message}", nameof(GitService));
+            return new FileDiffResult { HasOtherChanges = true };
         }
     }
 
@@ -424,6 +427,16 @@ public static class GitService
             if (line.Length <= 3) return null;
             string file = line.Substring(3).Trim();
             if (string.IsNullOrWhiteSpace(file)) return null;
+
+            // Renames/copies are reported as "old/path -> new/path" (each side optionally quoted).
+            // We only care about the current (destination) path.
+            int arrowIndex = file.IndexOf(" -> ", StringComparison.Ordinal);
+            if (arrowIndex >= 0)
+            {
+                file = file.Substring(arrowIndex + 4).Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(file)) return null;
             if (file.StartsWith("\"") && file.EndsWith("\"") && file.Length > 2) file = UnescapeGitFilename(file);
             if (file.IndexOfAny(new char[] { '\0' }) >= 0) return null;
             return file;
@@ -490,21 +503,63 @@ public static class GitService
         return RunGitCommandAsync(repoRoot, "diff \"" + rel + "\"");
     }
 
-    private static async Task<string> RunGitCommandAsync(string workingDir, string args)
+    private const int _gitCommandTimeoutMilliseconds = 30000;
+
+    // Global cap on concurrent git.exe processes across all callers - lets call sites parallelize freely
+    // (e.g. one Task per changed file) without risking dozens/hundreds of processes spawning at once.
+    private static readonly System.Threading.SemaphoreSlim _gitProcessThrottle = new(4, 4);
+
+    private static async Task<string> RunGitCommandAsync(string workingDir, string args, int timeoutMilliseconds = _gitCommandTimeoutMilliseconds)
     {
-        ProcessStartInfo psi = new("git", args)
+        await _gitProcessThrottle.WaitAsync();
+        try
         {
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        using (Process proc = Process.Start(psi))
+            ProcessStartInfo psi = new("git", args)
+            {
+                WorkingDirectory = workingDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using (Process proc = Process.Start(psi))
+            {
+                Task<string> outputTask = proc.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = proc.StandardError.ReadToEndAsync();
+
+                // Read stdout and stderr concurrently - draining only one while the other fills its OS
+                // pipe buffer can deadlock the child process.
+                Task readTask = Task.WhenAll(outputTask, errorTask);
+
+                Task completed = await Task.WhenAny(readTask, Task.Delay(timeoutMilliseconds));
+                if (completed != readTask)
+                {
+                    DebugHelper.Log($"RunGitCommandAsync: 'git {args}' in '{workingDir}' timed out after {timeoutMilliseconds}ms; killing process", nameof(GitService));
+                    try { proc.Kill(); } catch { /* already exited */ }
+                    return "";
+                }
+
+                // Streams have closed, which happens at/around process exit - bound this too in case the
+                // process lingers after closing its handles.
+                if (!proc.WaitForExit(5000))
+                {
+                    DebugHelper.Log($"RunGitCommandAsync: 'git {args}' in '{workingDir}' did not exit after streams closed; killing process", nameof(GitService));
+                    try { proc.Kill(); } catch { /* already exited */ }
+                    return "";
+                }
+
+                if (proc.ExitCode != 0)
+                {
+                    string errorOutput = await errorTask;
+                    DebugHelper.Log($"RunGitCommandAsync: 'git {args}' exited with code {proc.ExitCode} in '{workingDir}': {errorOutput}", nameof(GitService));
+                }
+
+                return await outputTask;
+            }
+        }
+        finally
         {
-            string output = await proc.StandardOutput.ReadToEndAsync();
-            proc.WaitForExit();
-            return output;
+            _gitProcessThrottle.Release();
         }
     }
 

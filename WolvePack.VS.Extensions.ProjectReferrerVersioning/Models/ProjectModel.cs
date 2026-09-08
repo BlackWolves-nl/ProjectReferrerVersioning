@@ -16,7 +16,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Models;
 /// <summary>
 /// Unified model for project discovery, UI binding, and Git status.
 /// </summary>
-public class ProjectModel : INotifyPropertyChanged
+public class ProjectModel : INotifyPropertyChanged, IEquatable<ProjectModel>
 {
     // VS Project reference (UI thread only)
     public Project Project { get; }
@@ -26,11 +26,19 @@ public class ProjectModel : INotifyPropertyChanged
     public string FullName { get; set; }
     public string FileName { get; set; }
     public string Kind { get; set; }
-    public string UniqueName { get; set; }
+
+    // Identity: EnvDTE's solution-unique, path-based identifier. Only ever set by the constructors -
+    // private set so it can safely be used for Equals/GetHashCode below without risking a mutated
+    // key silently corrupting a HashSet<ProjectModel>/Dictionary that already holds this instance.
+    public string UniqueName { get; private set; }
     public bool IsCSharpProject { get; set; }
     public string Version { get; set; }
 
-    // Project references (other projects this project depends on)
+    // Project references (other projects this project depends on).
+    // NOTE: holds each referenced project's UniqueName (EnvDTE's solution-unique, path-based identifier),
+    // not its display Name - two projects can legitimately share a display Name in the same solution
+    // (e.g. same-named projects in different Solution Folders), so Name alone cannot be used to resolve
+    // which project a reference actually points to.
     public List<string> ProjectReferences { get; set; } = new List<string>();
 
     // Git/Reference change tracking
@@ -76,11 +84,6 @@ public class ProjectModel : INotifyPropertyChanged
         get => _projectVersionChange;
         set
         {
-            if(value == null)
-            {
-                _projectVersionChange = value;
-            }
-
             if (_projectVersionChange != value)
             {
                 _projectVersionChange = value;
@@ -213,8 +216,19 @@ public class ProjectModel : INotifyPropertyChanged
                 {
                     if (reference.SourceProject != null)
                     {
-                        DebugHelper.Log($"Project {project.Name} references project {reference.SourceProject.Name}", "ProjectReference");
-                        references.Add(reference.SourceProject.Name);
+                        // Use UniqueName (solution-unique, path-based) rather than the display Name: two
+                        // projects can share the same display Name (e.g. same-named projects in different
+                        // Solution Folders), which would make Name-based matching ambiguous.
+                        string referencedUniqueName = reference.SourceProject.UniqueName;
+                        if (string.IsNullOrEmpty(referencedUniqueName))
+                        {
+                            // Very unlikely fallback - keep the reference rather than silently dropping it.
+                            DebugHelper.Log($"Project {project.Name} references project {reference.SourceProject.Name} with no UniqueName; falling back to display Name", "ProjectReference");
+                            referencedUniqueName = reference.SourceProject.Name;
+                        }
+
+                        DebugHelper.Log($"Project {project.Name} references project {reference.SourceProject.Name} ({referencedUniqueName})", "ProjectReference");
+                        references.Add(referencedUniqueName);
                     }
                     else
                     {
@@ -309,5 +323,28 @@ public class ProjectModel : INotifyPropertyChanged
     protected virtual void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    // --- Equality (identity by UniqueName, not by object reference) ---
+    // Every collection in this codebase that uses ProjectModel as a HashSet/Dictionary key relies on this
+    // equality contract holding. Falls back to reference equality when UniqueName is unavailable, so it
+    // never claims two distinct, unidentified instances are equal.
+
+    public bool Equals(ProjectModel other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        if (string.IsNullOrEmpty(UniqueName) || string.IsNullOrEmpty(other.UniqueName))
+            return false;
+        return string.Equals(UniqueName, other.UniqueName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public override bool Equals(object obj) => Equals(obj as ProjectModel);
+
+    public override int GetHashCode()
+    {
+        return string.IsNullOrEmpty(UniqueName)
+            ? System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this)
+            : StringComparer.OrdinalIgnoreCase.GetHashCode(UniqueName);
     }
 }

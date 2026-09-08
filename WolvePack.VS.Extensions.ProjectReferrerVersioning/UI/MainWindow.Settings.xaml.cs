@@ -58,6 +58,8 @@ public partial class MainWindow
 
     private void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
     {
+        bool previousMinimizeChainDrawing = _userSettings.MinimizeChainDrawing;
+
         _userSettings.DefaultTheme = (DefaultThemeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Dark";
         _userSettings.DefaultLayout = (DefaultLayoutComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Standard (Tree)";
         _userSettings.DebugEnabled = DebugEnabledCheckBox.IsChecked ?? false;
@@ -82,10 +84,13 @@ public partial class MainWindow
         _userSettings.Save();
         SettingsStatusTextBlock.Text = "Settings saved.";
         SetThemeFromSettings();
-        
-        // Regenerate tree with new minimize chain drawing setting if tree exists
-        if (_lastGeneratedChains != null && _allProjects != null)
+
+        bool minimizeChainDrawingChanged = previousMinimizeChainDrawing != _userSettings.MinimizeChainDrawing;
+
+        if (minimizeChainDrawingChanged && _lastGeneratedChains != null && _allProjects != null)
         {
+            // Minimize Chain Drawing changes the tree's structure, so it must be rebuilt from scratch.
+            // This is the one setting where losing in-progress version picks is unavoidable.
             System.Collections.Generic.List<ProjectModel> selectedProjects = _allProjects.Where(p => p.IsSelected).ToList();
             if (selectedProjects.Count > 0)
             {
@@ -93,6 +98,12 @@ public partial class MainWindow
                 ReferrerTreeCanvas.Children.Clear();
                 _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
             }
+        }
+        else if (_lastGeneratedChains != null)
+        {
+            // No structural change - just redraw the existing tree so any in-progress version picks are preserved
+            ReferrerTreeCanvas.Children.Clear();
+            _drawingService.DrawChainsBase(ReferrerTreeCanvas, _lastGeneratedChains);
         }
         // Redraw the tree with the new theme if possible
         else if (_drawingService != null && ReferrerTreeCanvas != null && _drawingService is ReferrerChainDrawingServiceBase baseService && baseService.LastRoots != null)

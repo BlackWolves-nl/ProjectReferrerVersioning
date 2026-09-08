@@ -8,7 +8,7 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services;
 
 public class CompactVerticalOverlapReferrerChainDrawingService(ReferrerChainTheme theme) : ReferrerChainDrawingServiceBase(theme)
 {
-    public override ReferrerChainLayoutMode LayoutMode => ReferrerChainLayoutMode.CompactHorizontal;
+    public override ReferrerChainLayoutMode LayoutMode => ReferrerChainLayoutMode.CompactVertical;
 
     protected override void DrawChains(Canvas canvas, List<ReferrerChainNode> roots)
     {

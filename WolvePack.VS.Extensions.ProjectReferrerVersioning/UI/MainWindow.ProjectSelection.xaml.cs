@@ -171,8 +171,8 @@ public partial class MainWindow
         foreach(ProjectModel projectModel in projectModels)
         {
             projectModel.PropertyChanged += ProjectInfo_PropertyChanged;
-            // Set exclusion state from settings
-            projectModel.IsExcludedFromVersionUpdates = excluded.Contains(projectModel.Name);
+            // Set exclusion state from settings - keyed by UniqueName (see ExcludedCheckBox_Click below for why)
+            projectModel.IsExcludedFromVersionUpdates = !string.IsNullOrEmpty(projectModel.UniqueName) && excluded.Contains(projectModel.UniqueName);
         }
 
         _allProjects = new ObservableCollection<ProjectModel>(projectModels);
@@ -331,7 +331,29 @@ public partial class MainWindow
 
     private async Task GenerateReferrersAsync()
     {
-        Dictionary<string, ProjectModel> nameToProject = _allProjects.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+        // Keyed by UniqueName (solution-unique, path-based), not display Name - two projects can share the
+        // same display Name in the same solution (e.g. same-named projects in different Solution Folders),
+        // so a Name-keyed dictionary can throw on construction or silently resolve references to the wrong
+        // project. Built defensively (not via ToDictionary) so a missing/duplicate UniqueName is logged and
+        // skipped instead of taking down referrer generation for the whole solution.
+        Dictionary<string, ProjectModel> uniqueNameToProject = new(StringComparer.OrdinalIgnoreCase);
+        foreach (ProjectModel candidate in _allProjects)
+        {
+            if (string.IsNullOrEmpty(candidate.UniqueName))
+            {
+                DebugHelper.Log($"GenerateReferrers: Project '{candidate.Name}' has no UniqueName; it cannot be resolved as a reference target", nameof(MainWindow));
+                continue;
+            }
+
+            if (uniqueNameToProject.ContainsKey(candidate.UniqueName))
+            {
+                DebugHelper.Log($"GenerateReferrers: Duplicate UniqueName '{candidate.UniqueName}' (projects '{candidate.Name}' and '{uniqueNameToProject[candidate.UniqueName].Name}'); keeping the first one seen", nameof(MainWindow));
+            }
+            else
+            {
+                uniqueNameToProject.Add(candidate.UniqueName, candidate);
+            }
+        }
 
         // Clear existing referrers
         foreach(ProjectModel project in _allProjects)
@@ -346,9 +368,9 @@ public partial class MainWindow
             string refStatus = $"Ready - {total} projects loaded, generating referrers...{project.Name}";
             await SetStatusTextAsync(refStatus);
 
-            foreach(string referencedName in project.ProjectReferences)
+            foreach(string referencedUniqueName in project.ProjectReferences)
             {
-                if(nameToProject.TryGetValue(referencedName, out ProjectModel referencedProject))
+                if(uniqueNameToProject.TryGetValue(referencedUniqueName, out ProjectModel referencedProject))
                 {
                     referencedProject.Referrers.Add(project);
                 }
@@ -424,10 +446,15 @@ public partial class MainWindow
             if (string.IsNullOrEmpty(solutionName))
                 return;
 
+            if (string.IsNullOrEmpty(project.UniqueName))
+                return; // Can't persist an exclusion we can't uniquely identify on reload
+
             // Toggle exclusion
             project.IsExcludedFromVersionUpdates = checkBox.IsChecked == true;
 
-            // Update settings
+            // Update settings - keyed by UniqueName rather than display Name, since two projects can share
+            // the same display Name in the same solution (different Solution Folders); Name-keying would
+            // exclude/include both of them together instead of just the one the user toggled.
             _userSettings.ExcludedProjectsBySolution ??= new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>>();
 
             List<string> excludedList = _userSettings.ExcludedProjectsBySolution.ContainsKey(solutionName)
@@ -436,12 +463,12 @@ public partial class MainWindow
 
             if (project.IsExcludedFromVersionUpdates)
             {
-                if (!excludedList.Contains(project.Name))
-                    excludedList.Add(project.Name);
+                if (!excludedList.Contains(project.UniqueName))
+                    excludedList.Add(project.UniqueName);
             }
             else
             {
-                excludedList.Remove(project.Name);
+                excludedList.Remove(project.UniqueName);
             }
 
             _userSettings.Save();

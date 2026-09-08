@@ -343,6 +343,15 @@ public static class ReferrerChainService
             result.Successes.Add(node.Project.Name + ": " + oldVersion + " -> " + newVersion + " (EXCLUDED - version selected but not applied)");
             progress?.Invoke("Skipped " + node.Project.Name + ": " + oldVersion + " -> " + newVersion + " (excluded from updates)");
         }
+        else if (!node.Project.IsExcludedFromVersionUpdates && node.Project.ProjectVersionChange != null && !string.IsNullOrWhiteSpace(node.NewVersion))
+        {
+            // Project already has an uncommitted, Git-detected version change in flight (by design we don't
+            // touch its files in this case) - report that it was skipped instead of failing silently.
+            string oldVersion = node.Project.Version ?? "0.0.0.0";
+            string newVersion = node.NewVersion;
+            result.Successes.Add(node.Project.Name + ": " + oldVersion + " -> " + newVersion + " (PENDING - already has an uncommitted version change, not applied)");
+            progress?.Invoke("Skipped " + node.Project.Name + ": " + oldVersion + " -> " + newVersion + " (pending uncommitted version change)");
+        }
 
         if (node.Referrers != null)
         {

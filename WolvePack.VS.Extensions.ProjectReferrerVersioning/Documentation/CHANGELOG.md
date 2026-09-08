@@ -1,5 +1,26 @@
 ﻿# Changelog
 
+## [2.7.0.0] - Version Bump Reliability & Reference Integrity Fixes
+
+### Bug Fixes
+- **Silent skip reporting**: Projects skipped during Update Versions because they already have a pending, uncommitted Git-detected version change are now reported in the results (previously vanished with no success/error entry).
+- **Lost version selections on Save Settings**: Saving settings (theme, debug, hide-visited, versioning mode) no longer discards in-progress version picks; the tree only rebuilds when Minimize Chain Drawing actually changes.
+- **Duplicate project name crash**: Referrer graph generation no longer throws when two projects in the solution share a display Name (e.g. same-named projects in different Solution Folders) - project identity now resolves via EnvDTE's UniqueName instead of Name throughout reference resolution and the persisted exclusion list.
+- **Git rename parsing**: Renamed files reported by `git status --porcelain` (`old -> new`) are now parsed correctly instead of producing a bogus combined path that silently dropped the change from analysis.
+- **Git command reliability**: `RunGitCommandAsync` no longer risks deadlocking on unread stderr output; failures are now logged instead of silently returning "no changes"; added a 30-second timeout with process termination.
+- **Missed PropertyChanged notification**: Clearing a project's pending version change (`ProjectVersionChange = null`) now correctly raises `PropertyChanged`.
+- **Compact layout mode mismatch**: `CompactHorizontalOverlapReferrerChainDrawingService` and `CompactVerticalOverlapReferrerChainDrawingService` reported each other's `LayoutMode` value.
+
+### Improvements
+- **Confirmation before discarding version picks**: Clicking Generate Tree again after making version selections now asks for confirmation before regenerating (only when picks exist).
+- **Concurrent Git analysis**: Per-file diff analysis within a project now runs concurrently instead of one Git process at a time, bounded by a global concurrency limit (max 4 simultaneous `git.exe` processes) to avoid overwhelming large solutions.
+
+### Internal / Technical
+- `ProjectModel` now implements `IEquatable<ProjectModel>` (keyed on UniqueName) instead of relying solely on reference equality; `UniqueName` is no longer publicly settable.
+
+### Known Side Effect
+- Persisted "excluded from version updates" settings are keyed differently now (UniqueName instead of Name); existing exclusion selections will reset on first load after upgrading and need to be re-applied.
+
 ## [2.6.0.0] - Version Propagation Improvements
 - **Missing version elements**: Improved handling of projects with missing version elements in their project files.
   - Projects without `<Version>`,`<FileVersion>` or `<AssemblyVersion>` element will now have these elements added during version updates.
@@ -227,4 +248,4 @@
 
 ---
 
-**Extension Version:** 2.4.0.0
+**Extension Version:** 2.7.0.0

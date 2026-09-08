@@ -72,6 +72,21 @@ public partial class MainWindow
     /// <param name="e">The event arguments.</param>
     private async void GenerateButton_Click(object sender, RoutedEventArgs e)
     {
+        // Regenerating discards any version picks made on the current tree - confirm first, but only if there's
+        // actually something to lose.
+        if (_lastGeneratedChains != null && HasAnyVersionPicks(_lastGeneratedChains))
+        {
+            MessageBoxResult confirm = MessageBox.Show(
+                "Regenerating the tree will discard the version selections you've already made that haven't been applied yet. Continue?",
+                "Discard version selections?",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+        }
+
         // Get selected projects for tree generation
         System.Collections.Generic.List<ProjectModel> selectedProjects = _allProjects?.Where(p => p.IsSelected).ToList();
         if (selectedProjects?.Count > 0)
@@ -159,7 +174,7 @@ public partial class MainWindow
         // 2. Enable layout rounding + pixel snapping to align glyph baselines.
         // 3. Render directly with RenderTargetBitmap.Render(canvas) (avoid VisualBrush indirection).
         // 4. Restore previous state.
-        // (Further improvements planned separately – see plan in response.)
+        // (Further improvements planned separately ï¿½ see plan in response.)
 
         // Store current transform / settings
         Transform originalTransform = canvas.LayoutTransform;
@@ -299,6 +314,32 @@ public partial class MainWindow
                 Helpers.DebugHelper.ShowError("SVG export failed: " + ex.Message, "ExportSvgButton");
             }
         }
+    }
+
+    /// <summary>
+    /// Checks whether any node in the given chains already has a version selection
+    /// (explicit pick or cascade bump) that would be discarded by a rebuild.
+    /// </summary>
+    private static bool HasAnyVersionPicks(System.Collections.Generic.List<ReferrerChainNode> chains)
+    {
+        if (chains == null) return false;
+        var visited = new System.Collections.Generic.HashSet<ReferrerChainNode>();
+        bool Traverse(ReferrerChainNode n)
+        {
+            if (n == null || !visited.Add(n)) return false;
+            if (!string.IsNullOrWhiteSpace(n.NewVersion)) return true;
+            foreach (ReferrerChainNode c in n.Referrers)
+            {
+                if (Traverse(c)) return true;
+            }
+            return false;
+        }
+
+        foreach (ReferrerChainNode root in chains)
+        {
+            if (Traverse(root)) return true;
+        }
+        return false;
     }
 
     private void UpdateTreeStats()

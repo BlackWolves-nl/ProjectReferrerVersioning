@@ -21,9 +21,9 @@
     <StartAction>Program</StartAction>
     <StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/RootSuffix $(VSSDKTargetPlatformRegRootSuffix) /log</StartArguments>
-    <AssemblyVersion>2.7.0.0</AssemblyVersion>
-    <FileVersion>2.7.0.0</FileVersion>
-    <Version>2.7.0.0</Version>
+    <AssemblyVersion>2.8.0.0</AssemblyVersion>
+    <FileVersion>2.8.0.0</FileVersion>
+    <Version>2.8.0.0</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DeployExtension>true</DeployExtension>
@@ -126,6 +126,6 @@
       <BuiltVsix Include="$(OutputPath)$(AssemblyName).vsix" />
     </ItemGroup>
     <Message Text="Copying VSIX from %(BuiltVsix.Identity) to $(VsixOutputPath)$(AssemblyName)-$(Version).vsix" Importance="high" Condition="Exists('%(BuiltVsix.Identity)')" />
-    <Copy SourceFiles="@(BuiltVsix)" DestinationFiles="@(BuiltVsix->'$(VsixOutputPath)$(AssemblyName)-$(Version).vsix')" SkipUnchangedFiles="true" Condition="Exists('%(BuiltVsix.Identity)')" />
+    <Copy SourceFiles="@(BuiltVsix)" DestinationFiles="@(BuiltVsix-&gt;'$(VsixOutputPath)$(AssemblyName)-$(Version).vsix')" SkipUnchangedFiles="true" Condition="Exists('%(BuiltVsix.Identity)')" />
   </Target>
 </Project>

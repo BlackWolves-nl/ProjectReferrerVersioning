@@ -405,6 +405,23 @@ public abstract class ReferrerChainDrawingServiceBase(ReferrerChainTheme theme) 
         };
 
         pill.MouseEnter += (s, e) => triggerNodeHover(true);
+
+        // Clicking the badge opens a modal with the full git diff of the project's changed files
+        void openDiff(object s, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            UI.Dialogs.GitDiffWindow dlg = new(node.Project)
+            {
+                Owner = Window.GetWindow(canvas)
+            };
+            dlg.ShowDialog();
+        }
+
+        badge.Cursor = System.Windows.Input.Cursors.Hand;
+        pill.Cursor = System.Windows.Input.Cursors.Hand;
+        ToolTipService.SetToolTip(pill, "Click to view git changes");
+        badge.MouseLeftButtonUp += openDiff;
+        pill.MouseLeftButtonUp += openDiff;
     }
 
     /// <summary>

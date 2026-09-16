@@ -91,6 +91,46 @@ public static class GitService
         return FindGitRootFromDirectory(Path.GetDirectoryName(filePath));
     }
 
+    /// <summary>
+    /// Returns the full unified diff (staged + unstaged against HEAD, plus untracked files as additions)
+    /// for every changed file under the project's directory.
+    /// </summary>
+    public static async Task<string> GetProjectDiffAsync(ProjectModel projectModel)
+    {
+        string projectDir = Path.GetDirectoryName(projectModel?.FileName ?? "");
+        if (string.IsNullOrEmpty(projectDir)) return "";
+
+        string repoRoot = FindGitRootForSolutionOrProjectFile(projectModel.FileName);
+        if (string.IsNullOrEmpty(repoRoot)) return "";
+
+        try
+        {
+            bool isRepoRoot = string.Equals(Path.GetFullPath(projectDir).TrimEnd('\\', '/'), Path.GetFullPath(repoRoot).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+            string pathSpec = isRepoRoot ? "." : GetRelativePath(repoRoot, projectDir).TrimEnd('/', '\\');
+
+            // Tracked changes (staged and unstaged). Falls back to working tree diff for repos without a HEAD commit.
+            string trackedDiff = await RunGitCommandAsync(repoRoot, "diff HEAD -- \"" + pathSpec + "\"");
+            if (string.IsNullOrEmpty(trackedDiff))
+                trackedDiff = await RunGitCommandAsync(repoRoot, "diff -- \"" + pathSpec + "\"");
+
+            // Untracked files are not part of git diff; render them as full-file additions.
+            string untrackedOutput = await RunGitCommandAsync(repoRoot, "ls-files -z --others --exclude-standard -- \"" + pathSpec + "\"");
+            List<string> untrackedFiles = untrackedOutput
+                .Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
+
+            string[] untrackedDiffs = await Task.WhenAll(untrackedFiles.Select(f =>
+                RunGitCommandAsync(repoRoot, "diff --no-index -- /dev/null \"" + f + "\"")));
+
+            return string.Join("\n", new[] { trackedDiff }.Concat(untrackedDiffs).Where(d => !string.IsNullOrWhiteSpace(d)).Select(d => d.TrimEnd('\n')));
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.Log($"GetProjectDiff: Error getting diff for '{projectModel.Name}': {ex.Message}", nameof(GitService));
+            return "";
+        }
+    }
+
     // =================================================================================================
     // Project Analysis Methods
     // =================================================================================================
@@ -520,7 +560,9 @@ public static class GitService
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8
             };
             using (Process proc = Process.Start(psi))
             {

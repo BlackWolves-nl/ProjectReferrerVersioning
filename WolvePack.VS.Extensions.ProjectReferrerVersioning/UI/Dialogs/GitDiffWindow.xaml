@@ -1,0 +1,155 @@
+<Window x:Class="WolvePack.VS.Extensions.ProjectReferrerVersioning.UI.Dialogs.GitDiffWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Git Changes" Height="750" Width="1200" WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryForegroundBrush}"
+        Loaded="Window_Loaded" KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Themes/Theme.Dark.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="DiffAddedBackgroundBrush" Color="#1E3A24"/>
+            <SolidColorBrush x:Key="DiffAddedForegroundBrush" Color="#8FD694"/>
+            <SolidColorBrush x:Key="DiffRemovedBackgroundBrush" Color="#4A2023"/>
+            <SolidColorBrush x:Key="DiffRemovedForegroundBrush" Color="#F29B9B"/>
+            <SolidColorBrush x:Key="DiffHunkBackgroundBrush" Color="#1F2F45"/>
+            <SolidColorBrush x:Key="DiffHunkForegroundBrush" Color="#7FB3E8"/>
+            <SolidColorBrush x:Key="DiffFileHeaderBackgroundBrush" Color="#3A3A3A"/>
+            <SolidColorBrush x:Key="DiffMetaForegroundBrush" Color="#9A9A9A"/>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock x:Name="TitleTextBlock" Text="Git Changes" FontSize="18" FontWeight="Bold" Style="{StaticResource ThemedTextBlockStyle}" VerticalAlignment="Center"/>
+            <Border Margin="16,0,0,0" Padding="6,2" Background="{DynamicResource SecondaryBackgroundBrush}" CornerRadius="4" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="FileCountTextBlock" Style="{StaticResource ThemedTextBlockStyle}" FontWeight="Bold" />
+                    <TextBlock x:Name="AddedCountTextBlock" Foreground="{StaticResource DiffAddedForegroundBrush}" FontWeight="Bold" Margin="12,0,0,0" />
+                    <TextBlock x:Name="RemovedCountTextBlock" Foreground="{StaticResource DiffRemovedForegroundBrush}" FontWeight="Bold" Margin="8,0,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" MinWidth="120" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- File list -->
+            <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1" Background="{DynamicResource SecondaryBackgroundBrush}" CornerRadius="4">
+                <ListBox x:Name="FilesListBox" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource PrimaryForegroundBrush}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="FilesListBox_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="2" ToolTip="{Binding Path}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding FileName}" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource PrimaryForegroundBrush}"/>
+                                    <TextBlock Text="{Binding Directory}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{StaticResource DiffMetaForegroundBrush}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding AddedText}" Foreground="{StaticResource DiffAddedForegroundBrush}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{Binding RemovedText}" Foreground="{StaticResource DiffRemovedForegroundBrush}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" />
+
+            <!-- Diff lines -->
+            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrushColor}" BorderThickness="1" Background="{DynamicResource SecondaryBackgroundBrush}" CornerRadius="4">
+                <Grid>
+                    <ListBox x:Name="DiffListBox" Background="Transparent" BorderThickness="0"
+                             FontFamily="Consolas" FontSize="13" SelectionMode="Extended"
+                             VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" KeyDown="DiffListBox_KeyDown">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Grid>
+                                                <Border Background="{TemplateBinding Background}" />
+                                                <Border x:Name="SelectionOverlay" Background="{StaticResource AccentBrush}" Opacity="0" />
+                                                <ContentPresenter />
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.35" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Added">
+                                        <Setter Property="Background" Value="{StaticResource DiffAddedBackgroundBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource DiffAddedForegroundBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Removed">
+                                        <Setter Property="Background" Value="{StaticResource DiffRemovedBackgroundBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource DiffRemovedForegroundBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Hunk">
+                                        <Setter Property="Background" Value="{StaticResource DiffHunkBackgroundBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource DiffHunkForegroundBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="FileHeader">
+                                        <Setter Property="Background" Value="{StaticResource DiffFileHeaderBackgroundBrush}" />
+                                        <Setter Property="FontWeight" Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Meta">
+                                        <Setter Property="Foreground" Value="{StaticResource DiffMetaForegroundBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="48" />
+                                        <ColumnDefinition Width="48" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding OldLineNumber}" Foreground="{StaticResource DiffMetaForegroundBrush}" TextAlignment="Right" Margin="0,0,6,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding NewLineNumber}" Foreground="{StaticResource DiffMetaForegroundBrush}" TextAlignment="Right" Margin="0,0,6,0" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Text}" Padding="4,1" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock x:Name="StatusTextBlock" Text="Loading diff..." Style="{StaticResource ThemedTextBlockStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Bottom buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Copy Diff" Width="90" Margin="4,0" Click="CopyDiff_Click" Style="{StaticResource ThemedButtonStyle}"/>
+            <Button Content="Close" Width="80" Margin="4,0" Click="Close_Click" Style="{StaticResource ThemedButtonStyle}"/>
+        </StackPanel>
+    </Grid>
+</Window>

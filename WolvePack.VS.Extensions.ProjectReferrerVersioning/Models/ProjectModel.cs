@@ -339,7 +339,10 @@ public class ProjectModel : INotifyPropertyChanged, IEquatable<ProjectModel>
         return string.Equals(UniqueName, other.UniqueName, StringComparison.OrdinalIgnoreCase);
     }
 
-    public override bool Equals(object obj) => Equals(obj as ProjectModel);
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as ProjectModel);
+    }
 
     public override int GetHashCode()
     {

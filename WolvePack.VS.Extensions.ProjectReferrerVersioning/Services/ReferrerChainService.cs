@@ -255,6 +255,7 @@ public static class ReferrerChainService
                             el.Value = value;
                             return true;
                         }
+
                         return false;
                     }
 
@@ -267,11 +268,13 @@ public static class ReferrerChainService
                             parent.Add(new XElement(name, value));
                             return true;
                         }
+
                         if(!string.Equals(el.Value, value, StringComparison.Ordinal))
                         {
                             el.Value = value;
                             return true;
                         }
+
                         return false;
                     }
 

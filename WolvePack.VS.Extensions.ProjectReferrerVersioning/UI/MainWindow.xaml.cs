@@ -82,10 +82,7 @@ public partial class MainWindow : Window
 
     private void SetDrawingService(IReferrerChainDrawingService drawingService)
     {
-        if (_drawingService != null)
-        {
-            _drawingService.AllRootNodesUpdated -= OnAllRootNodesUpdated;
-        }
+        _drawingService?.AllRootNodesUpdated -= OnAllRootNodesUpdated;
 
         _drawingService = drawingService;
         if (_drawingService != null)

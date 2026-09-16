@@ -1,5 +1,19 @@
 ﻿# Changelog
 
+## [2.8.0.0] - Git Diff Viewer
+
+### New Features
+- **Git diff viewer**: Clicking the Git change badge (or its expanded pill) on a tree output node opens a themed, resizable dialog showing the full Git diff of all changed files in that project.
+  - Includes staged and unstaged changes (against `HEAD`) plus untracked files shown as full additions.
+  - File list with per-file added/removed line counts; selecting a file jumps to its diff.
+  - Color-coded added/removed lines and hunk headers, with old/new line numbers.
+  - Header summary with total changed files and added/removed lines.
+  - Copy selected lines (Ctrl+C) or the complete raw diff to the clipboard; Esc closes the dialog.
+- **Badge affordance**: The Git badge now shows a hand cursor and a "Click to view git changes" tooltip.
+
+### Improvements
+- **UTF-8 Git output**: Git command output is now read as UTF-8, so non-ASCII content in diffs displays correctly.
+
 ## [2.7.0.0] - Version Bump Reliability & Reference Integrity Fixes
 
 ### Bug Fixes

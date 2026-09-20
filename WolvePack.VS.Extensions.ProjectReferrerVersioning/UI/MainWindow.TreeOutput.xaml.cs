@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -323,7 +324,7 @@ public partial class MainWindow
     private static bool HasAnyVersionPicks(System.Collections.Generic.List<ReferrerChainNode> chains)
     {
         if (chains == null) return false;
-        var visited = new System.Collections.Generic.HashSet<ReferrerChainNode>();
+        HashSet<ReferrerChainNode> visited = new();
         bool Traverse(ReferrerChainNode n)
         {
             if (n == null || !visited.Add(n)) return false;
@@ -332,6 +333,7 @@ public partial class MainWindow
             {
                 if (Traverse(c)) return true;
             }
+
             return false;
         }
 
@@ -339,6 +341,7 @@ public partial class MainWindow
         {
             if (Traverse(root)) return true;
         }
+
         return false;
     }
 
@@ -354,21 +357,21 @@ public partial class MainWindow
         // Count roots
         int rootCount = _lastGeneratedChains.Count;
         // Gather all nodes (instances) and unique projects from the current chains
-        var visitedNodeInstances = new System.Collections.Generic.HashSet<ReferrerChainNode>();
-        var uniqueProjects = new System.Collections.Generic.HashSet<ProjectModel>();
+        HashSet<ReferrerChainNode> visitedNodeInstances = new();
+        HashSet<ProjectModel> uniqueProjects = new();
         void Traverse(ReferrerChainNode n)
         {
             if (n == null || !visitedNodeInstances.Add(n)) return;
             if (n.Project != null) uniqueProjects.Add(n.Project);
-            foreach (var c in n.Referrers) Traverse(c);
+            foreach (ReferrerChainNode c in n.Referrers) Traverse(c);
         }
 
-        foreach (var r in _lastGeneratedChains) Traverse(r);
+        foreach (ReferrerChainNode r in _lastGeneratedChains) Traverse(r);
         int totalGraphNodes = visitedNodeInstances.Count;
         int uniqueProjectCount = uniqueProjects.Count;
         // Count drawn rectangles (WPF nodes) & edges currently on canvas
         int drawnNodeRects = 0; int drawnEdges = 0;
-        foreach (var child in ReferrerTreeCanvas.Children)
+        foreach (object child in ReferrerTreeCanvas.Children)
         {
             if (child is System.Windows.Shapes.Rectangle rect && rect.Tag is ReferrerChainDrawingServiceBase.ReferrerChainNodeTag)
                 drawnNodeRects++;

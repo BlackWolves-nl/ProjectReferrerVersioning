@@ -626,6 +626,7 @@ public static class GitService
                 {
                     DebugHelper.Log($"RunGitCommandAsync: 'git {args}' in '{workingDir}' timed out after {timeoutMilliseconds}ms; killing process", nameof(GitService));
                     try { proc.Kill(); } catch { /* already exited */ }
+
                     return "";
                 }
 
@@ -635,6 +636,7 @@ public static class GitService
                 {
                     DebugHelper.Log($"RunGitCommandAsync: 'git {args}' in '{workingDir}' did not exit after streams closed; killing process", nameof(GitService));
                     try { proc.Kill(); } catch { /* already exited */ }
+
                     return "";
                 }
 

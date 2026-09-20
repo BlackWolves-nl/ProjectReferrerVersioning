@@ -4,7 +4,8 @@
 
 ### New Features
 - **Git diff viewer**: Clicking the Git change badge (or its expanded pill) on a tree output node opens a themed, resizable dialog showing the full Git diff of all changed files in that project.
-  - Includes staged and unstaged changes (against `HEAD`) plus untracked files shown as full additions.
+  - Includes unpushed commits, staged and unstaged changes, plus untracked files shown as full additions.
+  - **Include unpushed commits** toggle (on by default) switches between comparing against the branch's upstream and against `HEAD` (uncommitted changes only); the header shows which ref is being compared against.
   - File list with per-file added/removed line counts; selecting a file jumps to its diff.
   - Color-coded added/removed lines and hunk headers, with old/new line numbers.
   - Header summary with total changed files and added/removed lines.
@@ -12,7 +13,11 @@
 - **Badge affordance**: The Git badge now shows a hand cursor and a "Click to view git changes" tooltip.
 
 ### Improvements
+- **Unpushed commits included in change detection**: Git analysis now compares against the branch's upstream instead of `HEAD`, so locally committed but unpushed work counts towards the node badge file/line counts, node status colors, and reference/version change detection. Branches without an upstream keep comparing against `HEAD`.
 - **UTF-8 Git output**: Git command output is now read as UTF-8, so non-ASCII content in diffs displays correctly.
+
+### Known Side Effect
+- A project whose version was bumped in an unpushed commit is now detected as already having a pending version change, so Update Versions skips it (and reports the skip) instead of bumping it again.
 
 ## [2.7.0.0] - Version Bump Reliability & Reference Integrity Fixes
 

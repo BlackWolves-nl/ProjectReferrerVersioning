@@ -13,10 +13,11 @@ This Visual Studio extension provides advanced project referrer visualization an
   - **Hover effect**: Project list items highlight with a lighter background on mouseover for better visibility.
   - **Edge and Node Highlighting**: Hovering a node highlights all edges in its referrer path and all nodes representing the same project across the graph.
   - **Unique Path-based Tagging**: Nodes and edges are tagged with unique path-based objects, ensuring correct highlighting even for duplicate project names.
-  - **Git badge**: Each node shows a badge with the total number of changed files and lines (uncommitted changes). On hover, the badge expands into a pill showing files and lines separately.
+  - **Git badge**: Each node shows a badge with the total number of changed files and lines (unpushed commits and uncommitted changes). On hover, the badge expands into a pill showing files and lines separately.
   - **Badge and pill**: Styled and positioned according to the current theme, with perfect text centering and rightward expansion.
   - **Git diff viewer**: Clicking the Git badge (or its expanded pill) opens a themed dialog with the full diff of all changed files in that project.
-    - Includes staged, unstaged, and untracked (new) files.
+    - Includes unpushed commits, staged and unstaged changes, and untracked (new) files.
+    - Toggle to include or exclude unpushed commits (compares against the branch's upstream, or `HEAD` when there is none).
     - File list with per-file added/removed line counts; click a file to jump to its diff.
     - Color-coded added/removed lines and hunk headers with old/new line numbers.
     - Copy selected lines (Ctrl+C) or the complete raw diff to the clipboard; Esc closes the dialog.
@@ -31,7 +32,8 @@ This Visual Studio extension provides advanced project referrer visualization an
 - **Git Integration for Change Detection**
   - Detects uncommitted changes in NuGet packages and project references using Git.
   - Differentiates between added, removed, and edited references, showing tooltips for these changes.
-  - Shows number of changed files and changed lines for each project (uncommitted changes).
+  - Shows number of changed files and changed lines for each project (unpushed commits and uncommitted changes).
+  - Compares against the branch's upstream, so locally committed but unpushed work is included; branches without an upstream compare against `HEAD`.
   - View the complete Git diff of a project directly from the tree output.
 
 - **Export and Sharing**

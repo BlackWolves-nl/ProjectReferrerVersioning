@@ -12,6 +12,9 @@
   - Copy selected lines (Ctrl+C) or the complete raw diff to the clipboard; Esc closes the dialog.
 - **Badge affordance**: The Git badge now shows a hand cursor and a "Click to view git changes" tooltip.
 
+### Bug Fixes
+- **Stale projects after switching solutions**: The project discovery cache was keyed only on time (2 minute expiry), so opening the extension shortly after switching to another solution - for example a different worktree of the same repository - showed the previous solution's projects and paths, making every project look unchanged. The cache is now keyed on the open solution, and the Refresh button clears it (previously it only re-read the same cached list).
+
 ### Improvements
 - **Unpushed commits included in change detection**: Git analysis now compares against the branch's upstream instead of `HEAD`, so locally committed but unpushed work counts towards the node badge file/line counts, node status colors, and reference/version change detection. Branches without an upstream keep comparing against `HEAD`.
   - **Include unpushed commits** checkbox next to the Select All / None / Modified buttons on the Select Projects tab toggles this. Changing it re-analyzes the loaded projects (keeping the current selection) and is persisted in user settings.

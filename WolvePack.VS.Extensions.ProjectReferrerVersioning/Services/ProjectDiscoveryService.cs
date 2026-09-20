@@ -21,27 +21,47 @@ public static class ProjectDiscoveryService
     // Cache to avoid repeated expensive calls
     private static readonly object _cacheLock = new();
     private static List<ProjectModel> _cachedProjectModels;
+    private static string _cachedSolutionPath;
     private static DateTime _lastCacheTime = DateTime.MinValue;
     private static readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(2);
 
     /// <summary>
-    /// Ultra-fast project discovery with minimal UI thread time
+    /// Drops the cached project list so the next discovery re-reads the solution.
+    /// </summary>
+    public static void InvalidateCache()
+    {
+        lock (_cacheLock)
+        {
+            _cachedProjectModels = null;
+            _cachedSolutionPath = null;
+            _lastCacheTime = DateTime.MinValue;
+        }
+    }
+
+    /// <summary>
+    /// Ultra-fast project discovery with minimal UI thread time.
+    /// The cache is keyed on the open solution, so switching solutions (for example to another
+    /// worktree of the same repository) never returns the previous solution's projects.
     /// </summary>
     public static async Task<List<ProjectModel>> GetBasicSolutionProjectsAsync()
     {
-        // Check cache first (thread-safe)
+        // Quick UI thread burst - get all project data at once
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        string solutionPath = GetOpenSolutionPath();
+
+        // Check cache first (thread-safe), but only for the solution it was built from
         lock (_cacheLock)
         {
-            if (_cachedProjectModels != null && DateTime.UtcNow - _lastCacheTime < _cacheExpiry)
+            if (_cachedProjectModels != null &&
+                string.Equals(_cachedSolutionPath, solutionPath, StringComparison.OrdinalIgnoreCase) &&
+                DateTime.UtcNow - _lastCacheTime < _cacheExpiry)
             {
                 return _cachedProjectModels.ToList(); // Return copy to avoid thread issues
             }
         }
 
-        // Quick UI thread burst - get all project data at once
         List<ProjectModel> projectModels = null;
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-        
         try
         {
             projectModels = ExtractAllProjectDataQuickly();
@@ -56,11 +76,29 @@ public static class ProjectDiscoveryService
             lock (_cacheLock)
             {
                 _cachedProjectModels = projectModels ?? new List<ProjectModel>();
+                _cachedSolutionPath = solutionPath;
                 _lastCacheTime = DateTime.UtcNow;
             }
         }
 
         return projectModels ?? new List<ProjectModel>();
+    }
+
+    /// <summary>
+    /// Full path of the currently open solution, or an empty string when none is open.
+    /// </summary>
+    private static string GetOpenSolutionPath()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        try
+        {
+            return Package.GetGlobalService(typeof(DTE)) is EnvDTE80.DTE2 dte ? dte.Solution?.FullName ?? "" : "";
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.Log($"Exception reading solution path: {ex}", nameof(ProjectDiscoveryService));
+            return "";
+        }
     }
 
     /// <summary>

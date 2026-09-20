@@ -442,6 +442,7 @@ public partial class MainWindow
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
         // Clear all caches when refreshing
+        ProjectDiscoveryService.InvalidateCache();
 
         _ = InitializeWindowAsync(null); // Refresh without pre-selection
     }

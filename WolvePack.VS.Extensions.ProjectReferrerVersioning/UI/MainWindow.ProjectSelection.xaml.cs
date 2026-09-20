@@ -422,6 +422,23 @@ public partial class MainWindow
         }
     }
 
+    /// <summary>
+    /// Toggles whether unpushed commits count as changes and re-analyzes the loaded projects.
+    /// Selections are kept (unlike Refresh, which reloads the solution's projects).
+    /// </summary>
+    private async void IncludeUnpushedCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        bool includeUnpushed = IncludeUnpushedCheckBox.IsChecked == true;
+        _userSettings.IncludeUnpushedCommits = includeUnpushed;
+        _userSettings.Save(); // also updates UserSettings.ActiveIncludeUnpushedCommits, which GitService reads
+
+        if (_allProjects == null || _allProjects.Count == 0) return;
+
+        _isAnalysisComplete = false;
+        await UpdateGenerateButtonStateAsync();
+        await AnalyzeGitStatusAsync(_allProjects.ToList());
+    }
+
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
         // Clear all caches when refreshing

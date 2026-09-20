@@ -109,6 +109,13 @@
                             <Button Name="SelectAllButton" Content="Select All" Margin="0,0,8,0" Click="SelectAllButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
                             <Button Name="SelectNoneButton" Content="Select None" Margin="0,0,8,0" Click="SelectNoneButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
                             <Button Name="SelectModifiedButton" Content="Select Modified" Click="SelectModifiedButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+                            <CheckBox Name="IncludeUnpushedCheckBox" Margin="16,0,0,0" VerticalAlignment="Center"
+                                      ToolTip="Count commits that have not been pushed to the upstream branch as changes. Changing this re-analyzes all projects."
+                                      Click="IncludeUnpushedCheckBox_Click">
+                                <CheckBox.Content>
+                                    <TextBlock Text="Include unpushed commits" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </CheckBox.Content>
+                            </CheckBox>
                         </StackPanel>
                     </Border>
                     

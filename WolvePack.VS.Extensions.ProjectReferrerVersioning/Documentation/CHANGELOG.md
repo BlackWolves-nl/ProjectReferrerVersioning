@@ -14,6 +14,8 @@
 
 ### Improvements
 - **Unpushed commits included in change detection**: Git analysis now compares against the branch's upstream instead of `HEAD`, so locally committed but unpushed work counts towards the node badge file/line counts, node status colors, and reference/version change detection. Branches without an upstream keep comparing against `HEAD`.
+  - **Include unpushed commits** checkbox next to the Select All / None / Modified buttons on the Select Projects tab toggles this. Changing it re-analyzes the loaded projects (keeping the current selection) and is persisted in user settings.
+  - The diff viewer's own toggle defaults to this setting.
 - **UTF-8 Git output**: Git command output is now read as UTF-8, so non-ASCII content in diffs displays correctly.
 
 ### Known Side Effect

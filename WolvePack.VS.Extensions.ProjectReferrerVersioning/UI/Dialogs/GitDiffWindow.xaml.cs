@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using WolvePack.VS.Extensions.ProjectReferrerVersioning.Helpers;
 using WolvePack.VS.Extensions.ProjectReferrerVersioning.Models;
 using WolvePack.VS.Extensions.ProjectReferrerVersioning.Services;
 
@@ -50,6 +51,7 @@ public partial class GitDiffWindow : Window
     {
         InitializeComponent();
         _project = project;
+        IncludeUnpushedCheckBox.IsChecked = UserSettings.ActiveIncludeUnpushedCommits; // follow the project selection setting
         Title = $"Git Changes - {project?.Name}";
         TitleTextBlock.Text = project?.Name ?? "Git Changes";
     }

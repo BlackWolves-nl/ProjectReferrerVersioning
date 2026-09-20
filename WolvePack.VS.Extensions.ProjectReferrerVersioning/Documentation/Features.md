@@ -34,6 +34,7 @@ This Visual Studio extension provides advanced project referrer visualization an
   - Differentiates between added, removed, and edited references, showing tooltips for these changes.
   - Shows number of changed files and changed lines for each project (unpushed commits and uncommitted changes).
   - Compares against the branch's upstream, so locally committed but unpushed work is included; branches without an upstream compare against `HEAD`.
+  - **Include unpushed commits** checkbox on the Select Projects tab (next to the select buttons) turns this on or off; changing it re-analyzes all loaded projects and is persisted in user settings.
   - View the complete Git diff of a project directly from the tree output.
 
 - **Export and Sharing**

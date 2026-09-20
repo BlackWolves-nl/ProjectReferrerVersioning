@@ -41,6 +41,8 @@ public partial class MainWindow
         // Set hide subsequent visits (persisted setting)
         HideSubsequentVisitsCheckBox.IsChecked = _userSettings.HideSubsequentVisits;
         HideVisitedCheckBox.IsChecked = _userSettings.HideSubsequentVisits; // initial sync for tree tab
+        // Set include unpushed commits (project selection tab)
+        IncludeUnpushedCheckBox.IsChecked = _userSettings.IncludeUnpushedCommits;
 
         // Set versioning mode
         foreach(ComboBoxItem item in VersioningModeComboBox.Items)

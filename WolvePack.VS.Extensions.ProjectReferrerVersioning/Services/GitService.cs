@@ -73,7 +73,7 @@ public static class GitService
         try
         {
             // Analysis runs start here, so this is where the cached comparison ref is refreshed.
-            string baseRef = await ResolveBaseRefAsync(repoRoot, refresh: true);
+            string baseRef = await GetAnalysisBaseRefAsync(repoRoot, refresh: true);
 
             string output = await RunGitCommandAsync(repoRoot, "status --porcelain");
             List<string> files = ParseGitStatusOutput(output);
@@ -97,6 +97,17 @@ public static class GitService
             DebugHelper.Log($"GetChangedFiles: Error getting changed files: {ex.Message}", nameof(GitService));
             return new List<string>();
         }
+    }
+
+    /// <summary>
+    /// Comparison ref for project analysis: honours the "include unpushed commits" user setting,
+    /// falling back to HEAD (uncommitted changes only) when it is turned off.
+    /// </summary>
+    private static Task<string> GetAnalysisBaseRefAsync(string repoRoot, bool refresh)
+    {
+        return UserSettings.ActiveIncludeUnpushedCommits
+            ? ResolveBaseRefAsync(repoRoot, refresh)
+            : Task.FromResult(_head_REF);
     }
 
     /// <summary>
@@ -264,7 +275,7 @@ public static class GitService
         if (changedFiles.Count == 0) return 0;
         try
         {
-            string baseRef = await ResolveBaseRefAsync(repoRoot, refresh: false);
+            string baseRef = await GetAnalysisBaseRefAsync(repoRoot, refresh: false);
             string diffNumstat = await RunGitCommandAsync(repoRoot,
                 "diff " + baseRef + " --numstat -- " + string.Join(" ", changedFiles.Select(f => '"' + f + '"')));
             return ParseDiffNumstat(diffNumstat);
@@ -587,7 +598,7 @@ public static class GitService
     private static async Task<string> GetGitDiffAsync(string repoRoot, string file)
     {
         string rel = GetRelativePath(repoRoot, file);
-        string baseRef = await ResolveBaseRefAsync(repoRoot, refresh: false);
+        string baseRef = await GetAnalysisBaseRefAsync(repoRoot, refresh: false);
         return await RunGitCommandAsync(repoRoot, "diff " + baseRef + " -- \"" + rel + "\"");
     }
 

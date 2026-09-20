@@ -19,6 +19,10 @@ namespace WolvePack.VS.Extensions.ProjectReferrerVersioning.Services;
 public static class GitService
 {
     private const int _max_DIRECTORY_LEVELS = 20;
+    private const string _head_REF = "HEAD";
+
+    // Comparison ref per repository root ("HEAD", or the upstream branch when the branch tracks one).
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _baseRefCache = new();
 
     // =================================================================================================
     // Public API Methods
@@ -60,21 +64,55 @@ public static class GitService
     }
 
     /// <summary>
-    /// Returns all changed (added/modified/deleted) files reported by git status --porcelain.
+    /// Returns all changed (added/modified/deleted) files: everything reported by git status --porcelain
+    /// plus everything changed by unpushed commits (when the branch tracks an upstream).
     /// </summary>
     public static async Task<List<string>> GetAllChangedFilesInRepoAsync(string repoRoot)
     {
         DebugHelper.Log($"GetChangedFiles: Starting Git status check in '{repoRoot}'", nameof(GitService));
         try
         {
+            // Analysis runs start here, so this is where the cached comparison ref is refreshed.
+            string baseRef = await ResolveBaseRefAsync(repoRoot, refresh: true);
+
             string output = await RunGitCommandAsync(repoRoot, "status --porcelain");
-            return ParseGitStatusOutput(output);
+            List<string> files = ParseGitStatusOutput(output);
+            if (baseRef == _head_REF) return files;
+
+            // Unpushed commits: files changed between the upstream and the working tree that git status
+            // does not report (already committed locally).
+            string committedOutput = await RunGitCommandAsync(repoRoot, "diff --name-only -z " + baseRef);
+            HashSet<string> knownFiles = new(files, StringComparer.OrdinalIgnoreCase);
+            foreach (string file in committedOutput.Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string normalized = file.Replace('/', Path.DirectorySeparatorChar);
+                if (knownFiles.Add(normalized)) files.Add(normalized);
+            }
+
+            DebugHelper.Log($"GetChangedFiles: {files.Count} changed files against '{baseRef}'", nameof(GitService));
+            return files;
         }
         catch (Exception ex)
         {
             DebugHelper.Log($"GetChangedFiles: Error getting changed files: {ex.Message}", nameof(GitService));
             return new List<string>();
         }
+    }
+
+    /// <summary>
+    /// Resolves the ref that diffs are compared against: the branch's upstream when it tracks one
+    /// (so unpushed commits are included), otherwise HEAD (uncommitted changes only).
+    /// Cached per repository and refreshed at the start of each analysis run.
+    /// </summary>
+    private static async Task<string> ResolveBaseRefAsync(string repoRoot, bool refresh)
+    {
+        if (!refresh && _baseRefCache.TryGetValue(repoRoot, out string cached)) return cached;
+
+        string upstream = (await RunGitCommandAsync(repoRoot, "rev-parse --abbrev-ref --symbolic-full-name @{u}")).Trim();
+        string baseRef = string.IsNullOrEmpty(upstream) ? _head_REF : upstream;
+        _baseRefCache[repoRoot] = baseRef;
+        DebugHelper.Log($"ResolveBaseRef: Comparing against '{baseRef}' in '{repoRoot}'", nameof(GitService));
+        return baseRef;
     }
 
     /// <summary>
@@ -92,24 +130,30 @@ public static class GitService
     }
 
     /// <summary>
-    /// Returns the full unified diff (staged + unstaged against HEAD, plus untracked files as additions)
-    /// for every changed file under the project's directory.
+    /// Returns the full unified diff for every changed file under the project's directory, plus the ref
+    /// it was compared against. Covers staged and unstaged changes and untracked files (as additions);
+    /// with <paramref name="includeUnpushedCommits"/> it also covers commits not yet pushed to the
+    /// branch's upstream (falls back to HEAD when the branch tracks no upstream).
     /// </summary>
-    public static async Task<string> GetProjectDiffAsync(ProjectModel projectModel)
+    public static async Task<(string Diff, string BaseRef)> GetProjectDiffAsync(ProjectModel projectModel, bool includeUnpushedCommits)
     {
         string projectDir = Path.GetDirectoryName(projectModel?.FileName ?? "");
-        if (string.IsNullOrEmpty(projectDir)) return "";
+        if (string.IsNullOrEmpty(projectDir)) return ("", _head_REF);
 
         string repoRoot = FindGitRootForSolutionOrProjectFile(projectModel.FileName);
-        if (string.IsNullOrEmpty(repoRoot)) return "";
+        if (string.IsNullOrEmpty(repoRoot)) return ("", _head_REF);
 
+        string baseRef = _head_REF;
         try
         {
+            baseRef = includeUnpushedCommits ? await ResolveBaseRefAsync(repoRoot, refresh: false) : _head_REF;
+
             bool isRepoRoot = string.Equals(Path.GetFullPath(projectDir).TrimEnd('\\', '/'), Path.GetFullPath(repoRoot).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
             string pathSpec = isRepoRoot ? "." : GetRelativePath(repoRoot, projectDir).TrimEnd('/', '\\');
 
-            // Tracked changes (staged and unstaged). Falls back to working tree diff for repos without a HEAD commit.
-            string trackedDiff = await RunGitCommandAsync(repoRoot, "diff HEAD -- \"" + pathSpec + "\"");
+            // Tracked changes (staged and unstaged, plus unpushed commits when comparing against an upstream).
+            // Falls back to the working tree diff for repos without a HEAD commit.
+            string trackedDiff = await RunGitCommandAsync(repoRoot, "diff " + baseRef + " -- \"" + pathSpec + "\"");
             if (string.IsNullOrEmpty(trackedDiff))
                 trackedDiff = await RunGitCommandAsync(repoRoot, "diff -- \"" + pathSpec + "\"");
 
@@ -122,12 +166,13 @@ public static class GitService
             string[] untrackedDiffs = await Task.WhenAll(untrackedFiles.Select(f =>
                 RunGitCommandAsync(repoRoot, "diff --no-index -- /dev/null \"" + f + "\"")));
 
-            return string.Join("\n", new[] { trackedDiff }.Concat(untrackedDiffs).Where(d => !string.IsNullOrWhiteSpace(d)).Select(d => d.TrimEnd('\n')));
+            string diff = string.Join("\n", new[] { trackedDiff }.Concat(untrackedDiffs).Where(d => !string.IsNullOrWhiteSpace(d)).Select(d => d.TrimEnd('\n')));
+            return (diff, baseRef);
         }
         catch (Exception ex)
         {
             DebugHelper.Log($"GetProjectDiff: Error getting diff for '{projectModel.Name}': {ex.Message}", nameof(GitService));
-            return "";
+            return ("", baseRef);
         }
     }
 
@@ -211,15 +256,17 @@ public static class GitService
     }
 
     /// <summary>
-    /// Uses git diff --numstat to count added + deleted lines across all changed files belonging to a project.
+    /// Uses git diff --numstat to count added + deleted lines across all changed files belonging to a project
+    /// (including unpushed commits when the branch tracks an upstream).
     /// </summary>
     private static async Task<int> CalculateChangedLinesAsync(string repoRoot, List<string> changedFiles)
     {
         if (changedFiles.Count == 0) return 0;
         try
         {
+            string baseRef = await ResolveBaseRefAsync(repoRoot, refresh: false);
             string diffNumstat = await RunGitCommandAsync(repoRoot,
-                "diff --numstat -- " + string.Join(" ", changedFiles.Select(f => '"' + f + '"')));
+                "diff " + baseRef + " --numstat -- " + string.Join(" ", changedFiles.Select(f => '"' + f + '"')));
             return ParseDiffNumstat(diffNumstat);
         }
         catch (Exception ex)
@@ -537,10 +584,11 @@ public static class GitService
         return Directory.Exists(gitDir) || File.Exists(gitDir);
     }
 
-    private static Task<string> GetGitDiffAsync(string repoRoot, string file)
+    private static async Task<string> GetGitDiffAsync(string repoRoot, string file)
     {
         string rel = GetRelativePath(repoRoot, file);
-        return RunGitCommandAsync(repoRoot, "diff \"" + rel + "\"");
+        string baseRef = await ResolveBaseRefAsync(repoRoot, refresh: false);
+        return await RunGitCommandAsync(repoRoot, "diff " + baseRef + " -- \"" + rel + "\"");
     }
 
     private const int _gitCommandTimeoutMilliseconds = 30000;

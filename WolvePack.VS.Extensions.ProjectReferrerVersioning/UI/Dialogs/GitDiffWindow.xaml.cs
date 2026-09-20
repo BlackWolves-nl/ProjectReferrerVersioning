@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -43,6 +44,7 @@ public partial class GitDiffWindow : Window
 
     private readonly ProjectModel _project;
     private string _rawDiff = "";
+    private bool _isLoaded;
 
     public GitDiffWindow(ProjectModel project)
     {
@@ -54,9 +56,34 @@ public partial class GitDiffWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        await LoadDiffAsync();
+    }
+
+    private async void IncludeUnpushedChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoaded) return; // ignore the Checked event raised before the window is up
+        await LoadDiffAsync();
+    }
+
+    /// <summary>
+    /// Loads (or reloads) the diff for the currently selected comparison scope.
+    /// </summary>
+    private async Task LoadDiffAsync()
+    {
+        StatusTextBlock.Text = "Loading diff...";
+        StatusTextBlock.Visibility = Visibility.Visible;
+        IncludeUnpushedCheckBox.IsEnabled = false;
         try
         {
-            _rawDiff = await GitService.GetProjectDiffAsync(_project);
+            bool includeUnpushed = IncludeUnpushedCheckBox.IsChecked == true;
+            (string diff, string baseRef) = await GitService.GetProjectDiffAsync(_project, includeUnpushed);
+            _rawDiff = diff;
+
+            // When the branch tracks no upstream there are no unpushed commits to compare against
+            bool comparedAgainstHead = string.Equals(baseRef, "HEAD", StringComparison.Ordinal);
+            BaseRefTextBlock.Text = comparedAgainstHead
+                ? includeUnpushed ? "vs HEAD (no upstream branch)" : "vs HEAD"
+                : $"vs {baseRef}";
 
             (List<DiffLine> lines, List<DiffFile> files) = ParseDiff(_rawDiff);
             DiffListBox.ItemsSource = lines;
@@ -78,6 +105,11 @@ public partial class GitDiffWindow : Window
         catch (Exception ex)
         {
             StatusTextBlock.Text = $"Failed to load diff: {ex.Message}";
+        }
+        finally
+        {
+            _isLoaded = true;
+            IncludeUnpushedCheckBox.IsEnabled = true;
         }
     }
 

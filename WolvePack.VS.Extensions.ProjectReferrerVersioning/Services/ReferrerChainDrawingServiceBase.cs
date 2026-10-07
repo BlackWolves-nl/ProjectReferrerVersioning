@@ -548,6 +548,7 @@ public abstract class ReferrerChainDrawingServiceBase(ReferrerChainTheme theme) 
                     if (n.Project == node.Project)
                     {
                         n.NewVersion = newVersion;
+                        n.IsAutomaticVersion = false;
                         n.Project.ProjectVersionChange = null; // Clear diff indicator since user explicitly chose new version
                     }
                 }
@@ -682,11 +683,33 @@ public abstract class ReferrerChainDrawingServiceBase(ReferrerChainTheme theme) 
             {
                 if (!child.Project.IsExcludedFromVersionUpdates && string.IsNullOrEmpty(child.NewVersion))
                 {
-                    int targetPart = UserSettings.ActiveVersioningMode == VersioningMode.ThreePart ? 2 : 3; // Patch or Revision depending on mode
-                    child.NewVersion = IncrementVersion(child.Project.Version ?? "0.0.0.0", targetPart);
+                    child.NewVersion = IncrementVersion(child.Project.Version ?? "0.0.0.0", SmallestBumpPart);
+                    child.IsAutomaticVersion = true;
                 }
 
                 BumpChildrenRecursive(child, visited, rootProjects, originally);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Smallest version segment to bump: Patch in three-part mode, Revision in four-part mode.
+    /// </summary>
+    private static int SmallestBumpPart => UserSettings.ActiveVersioningMode == VersioningMode.ThreePart ? 2 : 3;
+
+    /// <inheritdoc />
+    public void ApplyReferenceChangeVersionBumps(List<ReferrerChainNode> roots)
+    {
+        if (roots == null) return;
+
+        foreach (ReferrerChainNode node in GetAllNodes(roots))
+        {
+            if (node.Project.Status == ProjectStatus.NuGetOrProjectReferenceChanges &&
+                !node.Project.IsExcludedFromVersionUpdates &&
+                string.IsNullOrEmpty(node.NewVersion))
+            {
+                node.NewVersion = IncrementVersion(node.Project.Version ?? "0.0.0.0", SmallestBumpPart);
+                node.IsAutomaticVersion = true;
             }
         }
     }

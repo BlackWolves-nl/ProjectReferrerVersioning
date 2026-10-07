@@ -25,6 +25,7 @@ This Visual Studio extension provides advanced project referrer visualization an
 - **Version Management**
   - Allows bumping project versions (Major, Minor, Patch, Revision) directly from the UI via context menu.
   - Propagates version changes to dependent projects; child nodes automatically bump revision when all roots are set.
+  - Projects with only NuGet/project reference changes automatically get the smallest bump (Patch in three-part mode, Revision in four-part mode) pre-selected when the tree is generated; pick another version from the context menu to override it.
   - Updates AssemblyVersion, AssemblyFileVersion, and Version properties in project files (will create missing elements) and AssemblyInfo.cs.
   - Version changes are clearly displayed (e.g., "V 1.2.3.4 → V 1.2.4.0").
   - **Exclusion support**: Projects can be excluded from version updates via right-click context menu or settings. Excluded projects are not updated and are skipped in child node calculations. Excluded projects appear in dull grey and italic in the UI.
@@ -44,7 +45,7 @@ This Visual Studio extension provides advanced project referrer visualization an
 - **Filtering and Sorting**
   - Filter and sort projects by name or status.
   - Select all, none, or only modified projects with one click.
-  - "Select Modified" button automatically skips excluded projects for improved workflow efficiency.
+  - "Select Modified" button selects modified projects and projects with NuGet/project reference changes (with or without a version change), and automatically skips excluded projects.
   
 - **Legend and Status Indicators**
   - Visual legend for node types and project statuses.

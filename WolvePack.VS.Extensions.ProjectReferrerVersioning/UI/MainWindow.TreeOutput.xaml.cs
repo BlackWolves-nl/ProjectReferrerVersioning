@@ -119,6 +119,8 @@ public partial class MainWindow
 
                 // Clear the canvas before drawing
                 ReferrerTreeCanvas.Children.Clear();
+                // Projects with only NuGet/project reference changes get the smallest bump pre-selected
+                _drawingService.ApplyReferenceChangeVersionBumps(_lastGeneratedChains);
                 // Bump child revisions if all roots have a new version set (important for version propagation)
                 _drawingService.BumpChildRevisionsIfAllRootsSet(ReferrerTreeCanvas, _lastGeneratedChains);
                 // Draw the tree output (must be after bumping revisions to reflect changes)
@@ -319,7 +321,8 @@ public partial class MainWindow
 
     /// <summary>
     /// Checks whether any node in the given chains already has a version selection
-    /// (explicit pick or cascade bump) that would be discarded by a rebuild.
+    /// that would be discarded by a rebuild. Automatic bumps (reference-change and cascade bumps) are ignored
+    /// since regenerating reproduces them.
     /// </summary>
     private static bool HasAnyVersionPicks(System.Collections.Generic.List<ReferrerChainNode> chains)
     {
@@ -328,7 +331,7 @@ public partial class MainWindow
         bool Traverse(ReferrerChainNode n)
         {
             if (n == null || !visited.Add(n)) return false;
-            if (!string.IsNullOrWhiteSpace(n.NewVersion)) return true;
+            if (!string.IsNullOrWhiteSpace(n.NewVersion) && !n.IsAutomaticVersion) return true;
             foreach (ReferrerChainNode c in n.Referrers)
             {
                 if (Traverse(c)) return true;

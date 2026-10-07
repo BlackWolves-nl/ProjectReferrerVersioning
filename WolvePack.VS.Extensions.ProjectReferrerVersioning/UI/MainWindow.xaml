@@ -415,6 +415,55 @@
                     <TextBlock Grid.Row="7" Grid.Column="1" x:Name="SettingsStatusTextBlock" Foreground="#4CAF50" FontWeight="Bold" Margin="0,16,0,0" Style="{StaticResource ThemedTextBlockStyle}"/>
                 </Grid>
             </TabItem>
+
+            <TabItem Header="About" Background="{DynamicResource SecondaryBackgroundBrush}" Name="TabAbout" Style="{StaticResource ThemedTabItemStyle}">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Product name -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Project Referrer Chain Explorer" FontSize="18" FontWeight="Bold" Margin="0,0,0,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="Advanced project referrer visualization and version management for .NET C# solutions." TextWrapping="Wrap" Margin="0,0,0,16" Style="{StaticResource ThemedTextBlockStyle}"/>
+
+                    <!-- Version -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Version:" FontWeight="Bold" Margin="0,4,12,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" x:Name="AboutVersionTextBlock" Margin="0,4,0,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+
+                    <!-- Publisher -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Publisher:" FontWeight="Bold" Margin="0,4,12,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="WolvePack" Margin="0,4,0,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+
+                    <!-- Project page -->
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Project page:" FontWeight="Bold" Margin="0,4,12,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,4,0,4" Style="{StaticResource ThemedTextBlockStyle}">
+                        <Hyperlink NavigateUri="https://github.com/BlackWolves-nl/ProjectReferrerVersioning" RequestNavigate="AboutHyperlink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">
+                            <Run Text="https://github.com/BlackWolves-nl/ProjectReferrerVersioning"/>
+                        </Hyperlink>
+                    </TextBlock>
+
+                    <!-- Release notes -->
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Release notes:" FontWeight="Bold" Margin="0,4,12,4" Style="{StaticResource ThemedTextBlockStyle}"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,4,0,4" Style="{StaticResource ThemedTextBlockStyle}">
+                        <Hyperlink NavigateUri="https://github.com/BlackWolves-nl/ProjectReferrerVersioning/blob/main/WolvePack.VS.Extensions.ProjectReferrerVersioning/Documentation/CHANGELOG.md" RequestNavigate="AboutHyperlink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">
+                            <Run Text="Changelog"/>
+                        </Hyperlink>
+                    </TextBlock>
+
+                    <!-- Copyright -->
+                    <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Text="Copyright © WolvePack" Margin="0,16,0,0" VerticalAlignment="Top" Style="{StaticResource ThemedTextBlockStyle}"/>
+                </Grid>
+            </TabItem>
         </TabControl>
         
         <!-- Bottom Buttons -->

@@ -174,7 +174,7 @@ If you experience crashes:
 1. Restart Visual Studio
 2. Try with a smaller solution or fewer projects
 3. Check the Visual Studio Activity Log for error details
-4. Report the issue on our [GitHub Issues page](https://github.com/wolvepack/project-referrer-versioning/issues)
+4. Report the issue on our [GitHub Issues page](https://github.com/BlackWolves-nl/ProjectReferrerVersioning/issues)
 
 ## Advanced Usage
 
@@ -205,7 +205,7 @@ The extension doesn't currently provide a public API, but this is being consider
 - **Email**: Contact support@wolvepack.dev for direct assistance
 
 ### How do I report bugs or request features?
-1. Visit our [GitHub Issues page](https://github.com/wolvepack/project-referrer-versioning/issues)
+1. Visit our [GitHub Issues page](https://github.com/BlackWolves-nl/ProjectReferrerVersioning/issues)
 2. Search existing issues to avoid duplicates
 3. Use our issue templates to provide detailed information
 4. Include system information, steps to reproduce, and screenshots when relevant
@@ -219,8 +219,8 @@ We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for deta
 
 ### Where can I find the source code?
 The project is open-source and available on GitHub:
-[https://github.com/wolvepack/project-referrer-versioning](https://github.com/wolvepack/project-referrer-versioning)
+[https://github.com/BlackWolves-nl/ProjectReferrerVersioning](https://github.com/BlackWolves-nl/ProjectReferrerVersioning)
 
 ---
 
-*Don't see your question here? Check our [User Guide](UserGuide.md) for more detailed information, or ask in our [GitHub Discussions](https://github.com/wolvepack/project-referrer-versioning/discussions).*
+*Don't see your question here? Check our [User Guide](UserGuide.md) for more detailed information, or ask in our [GitHub Discussions](https://github.com/BlackWolves-nl/ProjectReferrerVersioning/discussions).*

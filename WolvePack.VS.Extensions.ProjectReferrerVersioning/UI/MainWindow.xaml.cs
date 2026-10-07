@@ -32,6 +32,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _userSettings = UserSettings.Load();
         ApplyUserSettingsToUI();
+        InitializeAboutTab();
 
         // Ensure DataContext is set for DataGrid binding
         this.DataContext = this;

@@ -74,8 +74,9 @@ public partial class MainWindow
             foreach (ProjectModel project in _filteredProjects)
             {
                 // Only select modified projects that are not excluded from version updates
-                project.IsSelected = (project.Status == ProjectStatus.Modified || 
-                                   project.Status == ProjectStatus.NuGetOrProjectReferenceChanges) &&
+                project.IsSelected = (project.Status == ProjectStatus.Modified ||
+                                   project.Status == ProjectStatus.NuGetOrProjectReferenceChanges ||
+                                   project.Status == ProjectStatus.NuGetOrProjectReferenceAndVersionChanges) &&
                                    !project.IsExcludedFromVersionUpdates;
             }
         }

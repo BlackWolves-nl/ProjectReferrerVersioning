@@ -37,6 +37,13 @@ public interface IReferrerChainDrawingService
     void BumpChildRevisionsIfAllRootsSet(Canvas canvas, List<ReferrerChainNode> roots);
 
     /// <summary>
+    /// Pre-selects the smallest version bump (Patch in three-part mode, Revision in four-part mode) for every
+    /// node whose project only has NuGet/project reference changes and no version set yet.
+    /// </summary>
+    /// <param name="roots">The list of root nodes for the referrer chains.</param>
+    void ApplyReferenceChangeVersionBumps(List<ReferrerChainNode> roots);
+
+    /// <summary>
     /// Raised when all root nodes have been updated and child revisions have been bumped.
     /// </summary>
     event Action AllRootNodesUpdated;

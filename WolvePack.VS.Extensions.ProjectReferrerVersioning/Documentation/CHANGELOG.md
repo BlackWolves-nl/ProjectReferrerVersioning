@@ -1,5 +1,15 @@
 ﻿# Changelog
 
+## [Unreleased]
+
+### New Features
+- **Automatic bump for reference changes**: When the tree is generated, projects with only NuGet/project reference changes get the smallest version bump pre-selected (Patch in three-part mode, Revision in four-part mode). Excluded projects and projects that already have a version change are left alone, and picking a version from the context menu overrides it. If this sets every selected project, the bump cascades to referrers as usual.
+- **About tab**: New tab showing the extension version, publisher, and links to the project page and release notes.
+- Regenerating the tree no longer asks to discard version selections when the only selections are automatic (reference-change or cascade bumps), since regenerating reproduces them.
+
+### Bug Fixes
+- **Select Modified missed NuGet + version projects**: Projects with NuGet/project reference changes *and* a version change were not selected by the Select Modified button.
+
 ## [2.8.0.0] - Git Diff Viewer
 
 ### New Features

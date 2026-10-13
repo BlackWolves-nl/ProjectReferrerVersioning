@@ -2,7 +2,7 @@
 
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/WolvePack.WolvePack-VS-Extensions-ProjectReferrerVersioning?style=flat-square&logo=visual-studio&label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=WolvePack.WolvePack-VS-Extensions-ProjectReferrerVersioning)
 [![License](https://img.shields.io/badge/License-WolvePack%20Custom-blue?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.10.0.0-green?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.11.0.0-green?style=flat-square)](CHANGELOG.md)
 
 > **Visualize, understand, and manage complex project dependencies in your Visual Studio solutions with automated version coordination.**
 

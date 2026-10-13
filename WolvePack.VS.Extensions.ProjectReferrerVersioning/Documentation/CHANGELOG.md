@@ -1,6 +1,6 @@
 ﻿# Changelog
 
-## [Unreleased]
+## [2.11.0.0] - Excluded Project Node Color
 
 ### Improvements
 - **Excluded projects colored in the tree**: Projects excluded from version updates now get their own node color (brown) in the generated tree, with a matching "Excluded" legend entry, instead of the color of their Git status. Duplicate (visited) nodes keep the visited color.

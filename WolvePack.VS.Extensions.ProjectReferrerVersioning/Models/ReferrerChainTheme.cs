@@ -17,6 +17,7 @@ public class ReferrerChainTheme
     public Brush ModifiedBrush { get; set; }                   // General modified color
     public Brush CleanBrush { get; set; }                      // Clean (no changes) color
     public Brush VisitedBrush { get; set; }                    // Visited node color
+    public Brush ExcludedBrush { get; set; }                   // Excluded from version updates color
     public Brush NodeBorderBrush { get; set; }                 // Node border color
     public Brush BackgroundBrush { get; set; }                 // Canvas background color
     public Brush TextBrush { get; set; }                       // Node text color
@@ -57,6 +58,7 @@ public class ReferrerChainTheme
             ModifiedBrush = resources["ProjectStatusModifiedBrush"] as Brush,
             CleanBrush = resources["ProjectStatusCleanBrush"] as Brush,
             VisitedBrush = resources["ExcludedProjectForegroundBrush"] as Brush,
+            ExcludedBrush = resources["ExcludedNodeBrush"] as Brush,
             NodeBorderBrush = resources["BorderBrushColor"] as Brush,
             BackgroundBrush = resources["PrimaryBackgroundBrush"] as Brush,
             TextBrush = resources["PrimaryForegroundBrush"] as Brush,

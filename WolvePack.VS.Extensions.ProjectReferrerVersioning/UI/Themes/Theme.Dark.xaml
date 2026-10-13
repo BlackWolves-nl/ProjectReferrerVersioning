@@ -37,6 +37,7 @@
     <SolidColorBrush x:Key="ProjectStatusNuGetOrProjectReferenceAndVersionChangesBrush" Color="#483D8B"/>
     <SolidColorBrush x:Key="ProjectStatusIsVersionChangeOnlyBrush" Color="#4682B4"/>
     <SolidColorBrush x:Key="ProjectStatusCleanBrush" Color="#228B22"/>
+    <SolidColorBrush x:Key="ExcludedNodeBrush" Color="#6D4C41"/>
     <SolidColorBrush x:Key="RootNodeBorderBrush" Color="{StaticResource RootNodeBorderColor}"/>
     <SolidColorBrush x:Key="HoverBorderBrush" Color="{StaticResource HoverBorderColor}"/>
     <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="{StaticResource BadgeBackgroundColor}"/>

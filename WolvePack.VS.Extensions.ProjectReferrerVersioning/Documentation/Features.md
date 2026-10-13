@@ -7,7 +7,7 @@ This Visual Studio extension provides advanced project referrer visualization an
 - **Project Referrer Tree Visualization**
   - Displays project referrer chains in a zoomable, scrollable tree view.
   - Supports multiple layout modes (Standard Tree, Compact Horizontal, Compact Vertical).
-  - Color-coded nodes for modified, clean, visited, and NuGet/project referrer/version changes.
+  - Color-coded nodes for modified, clean, visited, excluded, and NuGet/project referrer/version changes.
   - Status-based node coloring, including new states for NuGet/project reference and version changes.
   - Tooltips on nodes show detailed NuGet and project reference changes (added, removed, edited).
   - **Hover effect**: Project list items highlight with a lighter background on mouseover for better visibility.
@@ -28,7 +28,7 @@ This Visual Studio extension provides advanced project referrer visualization an
   - Projects with only NuGet/project reference changes automatically get the smallest bump (Patch in three-part mode, Revision in four-part mode) pre-selected when the tree is generated; pick another version from the context menu to override it.
   - Updates AssemblyVersion, AssemblyFileVersion, and Version properties in project files (will create missing elements) and AssemblyInfo.cs.
   - Version changes are clearly displayed (e.g., "V 1.2.3.4 → V 1.2.4.0").
-  - **Exclusion support**: Projects can be excluded from version updates via right-click context menu or settings. Excluded projects are not updated and are skipped in child node calculations. Excluded projects appear in dull grey and italic in the UI.
+  - **Exclusion support**: Projects can be excluded from version updates via right-click context menu or settings. Excluded projects are not updated and are skipped in child node calculations. Excluded projects appear in dull grey and italic in the project list, and get their own (brown) node color in the generated tree.
 
 - **Git Integration for Change Detection**
   - Detects uncommitted changes in NuGet packages and project references using Git.

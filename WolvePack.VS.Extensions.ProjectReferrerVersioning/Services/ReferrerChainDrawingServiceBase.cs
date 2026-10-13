@@ -722,6 +722,9 @@ public abstract class ReferrerChainDrawingServiceBase(ReferrerChainTheme theme) 
         if (!isRoot && visited.Contains(node.Project))
             return Theme.VisitedBrush; // Visual de-dupe indicator
 
+        if (node.Project.IsExcludedFromVersionUpdates)
+            return Theme.ExcludedBrush;
+
         return node.Project.Status switch
         {
             ProjectStatus.NuGetOrProjectReferenceAndVersionChanges => Theme.NugetAndVersionChangeBrush,

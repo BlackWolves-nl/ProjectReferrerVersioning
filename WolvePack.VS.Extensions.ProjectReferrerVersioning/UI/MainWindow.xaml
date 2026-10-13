@@ -320,9 +320,13 @@
                                     <Rectangle x:Name="LegendCleanNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
                                     <TextBlock Text="Clean" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
                                     <Rectangle x:Name="LegendVisitedNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
                                     <TextBlock Text="Visited" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Rectangle x:Name="LegendExcludedNodeRect" Width="18" Height="18" Stroke="Black" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Excluded" VerticalAlignment="Center" Style="{StaticResource ThemedTextBlockStyle}"/>
                                 </StackPanel>
                             </StackPanel>
                             <!-- The scrollable/zoomable canvas for the tree -->

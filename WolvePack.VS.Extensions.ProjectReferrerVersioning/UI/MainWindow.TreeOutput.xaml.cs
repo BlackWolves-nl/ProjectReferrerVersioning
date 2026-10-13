@@ -57,6 +57,7 @@ public partial class MainWindow
         LegendModifiedNodeRect.Fill = theme.ModifiedBrush;
         LegendCleanNodeRect.Fill = theme.CleanBrush;
         LegendVisitedNodeRect.Fill = theme.VisitedBrush;
+        LegendExcludedNodeRect.Fill = theme.ExcludedBrush;
     }
 
     /// <summary>
